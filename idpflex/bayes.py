@@ -5,7 +5,6 @@ against an experimental profile.
 
 from __future__ import print_function, absolute_import
 
-import numpy as np
 from mantid.simpleapi import (Fit, CreateWorkspace, TabulatedFunction,
                               CompositeFunctionWrapper, FlatBackground)
 
@@ -20,7 +19,7 @@ def model_at_node(node, property_name):
         Any node of a cnextend.Tree
     property_name : str
         name of the property to create the model for.
-    
+
     Returns
     -------
     c : TabulatedFunction + background
@@ -71,7 +70,7 @@ def model_at_depth(tree, depth, property_name):
 
 def do_fit(a_function, experiment, prefix='fit', run_fabada=False):
     r"""Carries out fitting of a model against an experimental profile.
-    
+
     An initial quick fit using Levenberg-Marquardt minimizer is followed
     by a longer minimization using the FABADA minimizer.
 
