@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+mantid = pytest.importorskip('mantid')  # skip all test if mantid not found
 from mantid.simpleapi import CreateWorkspace, FlatBackground
 
 from idpflex import bayes
-from idpflex.test.test_helper import sans_benchmark, sans_fit
+from test_helper import sans_benchmark, sans_fit
 
 
 def test_model_at_depth(sans_fit):

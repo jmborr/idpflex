@@ -3,7 +3,7 @@ from __future__ import print_function, absolute_import
 import pytest
 from scipy.cluster import hierarchy
 
-from idpflex.test.test_helper import benchmark
+from test_helper import benchmark
 from idpflex import cnextend as cnx
 
 
