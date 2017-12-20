@@ -23,7 +23,7 @@ install:
         conda install --yes -n testenv flake8;
     fi
   - source activate testenv
-  - pip install codecov lmfit
+  - pip install codecov lmfit h5py matplotlib
 
 script:
   - py.test --cov=idpflex idpflex tests
