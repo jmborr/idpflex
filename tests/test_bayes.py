@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from idpflex import bayes
-from test_helper import sans_benchmark, sans_fit
 
 mantid = pytest.importorskip('mantid')  # skip all test if mantid not found
 from mantid.simpleapi import FlatBackground

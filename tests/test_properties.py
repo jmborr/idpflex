@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from idpflex import properties as ps
-from test_helper import benchmark, sans_benchmark, saxs_benchmark
 
 
 class TestRegisterDecorateProperties(object):

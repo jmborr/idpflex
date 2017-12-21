@@ -11,12 +11,6 @@ from scipy.cluster.hierarchy import linkage
 
 from idpflex import cnextend as cnx, properties as ps
 
-# Resolve if pytest version is modern enough
-if LooseVersion(pytest.__version__) < LooseVersion('2.10.0'):
-    pytest_yield_fixture = pytest.yield_fixture
-else:
-    pytest_yield_fixture = pytest.fixture
-
 # Resolve the path to the "external data"
 this_module_path = sys.modules[__name__].__file__
 data_dir = os.path.join(os.path.dirname(this_module_path), 'data')
@@ -51,7 +45,7 @@ def benchmark():
             }
 
 
-@pytest_yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def saxs_benchmark():
     r"""Crysol output for one structure
 
@@ -62,11 +56,11 @@ def saxs_benchmark():
     """
 
     crysol_file = os.path.join(data_dir, 'saxs', 'crysol.dat')
-    yield dict(crysol_file=crysol_file)
+    return dict(crysol_file=crysol_file)
 
 
-@pytest_yield_fixture(scope="session")
-def sans_benchmark():
+@pytest.fixture(scope="session")
+def sans_benchmark(request):
     r"""Sassena output containing 1000 I(Q) profiles for the hiAPP centroids.
 
     Yields
@@ -96,14 +90,11 @@ def sans_benchmark():
         sans_property.from_sassena(handle, index=i)
         values.append(sans_property)
 
-    #
-    yield {'profiles': handle,
-           'property_list': values,
-           'tree_with_no_property': tree
-           }
-
-    # teardown code after finishing the testing session
-    handle.close()
+    def teardown():
+        handle.close()
+    request.addfinalizer(teardown)
+    return dict(profiles=handle, property_list=values,
+                tree_with_no_property=tree)
 
 
 @pytest.fixture(scope="session")
