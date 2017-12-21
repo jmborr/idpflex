@@ -10,7 +10,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
     properties associated to a specific node, like SANS profile
     """
     def __init__(self, *args, **kwargs):
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(ClusterNodeX, self).__init__(*args, **kwargs)
         self.parent = None
         self._properties = dict()
 
@@ -29,7 +29,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
     def leafs(self):
         """
         Find the leaf nodes under this cluster node
-        :return: list of node leafs ordered by increasing ID 
+        :return: list of node leafs ordered by increasing ID
         """
         return sorted(self.pre_order(lambda x: x), key=lambda x: x.id)
 
@@ -65,7 +65,7 @@ class Tree(object):
 
     def __len__(self):
         """
-        :return: Number of nodes in the tree 
+        :return: Number of nodes in the tree
         """
         return len(self._nodes)
 
@@ -127,7 +127,7 @@ class Tree(object):
 
     def clusters_above_depth(self, depth=0):
         r"""Clusters nodes at or above depth from the root node
-    
+
         Parameters
         ----------
         depth : int
@@ -148,7 +148,7 @@ class Tree(object):
 
     def clusters_at_depth(self, depth=0):
         r"""Cluster nodes at a given depth from the root node
-    
+
         Parameters
         ----------
         depth : int
