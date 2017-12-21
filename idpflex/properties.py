@@ -284,6 +284,7 @@ def weights_by_size(left_node, right_node):
     w = float(left_node.count) / (left_node.count + right_node.count)
     return w, 1-w
 
+
 propagator_size_weighted_sum = functools.partial(propagator_weighted_sum,
                                                  weights=weights_by_size)
 propagator_size_weighted_sum.__name__ = 'propagator_size_weighted_sum'

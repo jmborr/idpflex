@@ -6,9 +6,8 @@ from past.builtins import xrange
 
 
 class ClusterNodeX(hierarchy.ClusterNode):
-    """
-    Extension of hierarchy.ClusterNode to accomodate a parent reference and a dictionary of
-    properties associated to a specific node, like SANS profile
+    r"""Extension of hierarchy.ClusterNode to accomodate a parent reference and
+    a dictionary of properties associated to a specific node, like SANS profile
     """
     def __init__(self, *args, **kwargs):
         # Using super unfeasible since ClusterNode does not inherit from object
@@ -52,14 +51,15 @@ class Tree(object):
     def __init__(self, Z=None):
         self.root = None  # topmost node
         self.Z = Z  # linkage matrix from which to create the tree
-        # list of nodes, position in the list is node ID. Last in the list is the root node.
+        # list of nodes, position in the list is node ID. Last is the root node
         self._nodes = list()  # list of nodes, starting from the leaf nodes
         self.nleafs = 0  # a leaf is a node at the bottom of the tree
         if self.Z is not None:
             self.from_linkage_matrix(self.Z)
 
     def __iter__(self):
-        """Navigate the tree in order of decreasing node ID, starting from root node"""
+        """Navigate the tree in order of decreasing node ID, starting from
+        root node"""
         return (node for node in self._nodes[::-1])
 
     def __getitem__(self, index):
@@ -90,7 +90,7 @@ class Tree(object):
         the node_class object is a leaf node, its count must be 1, and its
         distance is meaningless but set to 0.
 
-        :param Z: (ndarray) The linkage matrix (scipy.cluster.hierarchy.linkage)
+        :param Z: (ndarray) linkage matrix (scipy.cluster.hierarchy.linkage)
         :param node_class the type of nodes composing the tree. Now supports
         ClusterNodeX and parent class scipy.cluster.hierarchy.ClusterNode
         """
@@ -108,13 +108,13 @@ class Tree(object):
             fi = int(Z[i, 0])
             fj = int(Z[i, 1])
             if fi > i + n:
-                raise ValueError(('Corrupt matrix Z. Index to derivative cluster '
-                                  'is used before it is formed. See row %d, '
-                                  'column 0') % fi)
+                raise ValueError(('Corrupt matrix Z. Index to derivative '
+                                  'cluster is used before it is formed. See '
+                                  'row %d, column 0') % fi)
             if fj > i + n:
-                raise ValueError(('Corrupt matrix Z. Index to derivative cluster '
-                                  'is used before it is formed. See row %d, '
-                                  'column 1') % fj)
+                raise ValueError(('Corrupt matrix Z. Index to derivative '
+                                  'cluster is used before it is formed. See '
+                                  'row %d, column 1') % fj)
             nd = node_class(i + n, left=d[fi], right=d[fj], dist=Z[i, 2])
             if hasattr(nd, 'parent'):
                 # True for ClusterNodeX objects

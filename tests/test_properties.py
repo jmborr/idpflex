@@ -1,9 +1,5 @@
 from __future__ import print_function, absolute_import
 
-import sys
-import os
-#sys.path.append(os.path.join(os.path.dirname(__file__)))
-
 import numpy as np
 import pytest
 
@@ -121,8 +117,8 @@ class TestPropagators(object):
     def test_propagator_weighted_sum(self, benchmark):
         tree = benchmark['tree']
         ps.propagator_weighted_sum(benchmark['simple_property'], tree)
-        l = benchmark['nleafs']
-        assert tree.root['foo'].bar == int(l * (l-1) / 2)
+        lfs = benchmark['nleafs']
+        assert tree.root['foo'].bar == int(lfs * (lfs-1) / 2)
 
     def test_propagator_size_weighted_sum(self, sans_benchmark):
         tree = sans_benchmark['tree_with_no_property']

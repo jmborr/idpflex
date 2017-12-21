@@ -146,7 +146,7 @@ try:
         Returns
         -------
         fits_output : list
-            list containing fit outputs at each level of the tree up to max_depth
+            Fit outputs at each level of the tree up to max_depth
         """
 
         # Fit each level of the tree
@@ -163,7 +163,7 @@ try:
             """
             # Calculate probability of this level.
             # Assumptions:
-            # 1 Model is a combination of tabulated functions plus flat background
+            # 1 Model is tabulated functions plus flat background
             # 2 Background is the last entry
 
             # Extract the normalized variance-covariance matrix
@@ -172,12 +172,12 @@ try:
             # The last column and the last row relate to the flat background
             # parameter.
             n_row, n_cols = table.rowCount() - 1, table.columnCount() - 2
-            normalized_var_cov = np.zeros(n_row * n_cols).reshape((n_row, n_cols))
+            norm_var_cov = np.zeros(n_row * n_cols).reshape((n_row, n_cols))
             for i_col in range(1, table.columnCount()-1):
-                normalized_var_cov[:, i_col-1] = table.column(i_col)[:-1]
+                norm_var_cov[:, i_col-1] = table.column(i_col)[:-1]
             # mantid outputs the normalized covariance matrix such that the
             # diagonal elements are 100.
-            normalized_var_cov /= 100.0
+            norm_var_cov /= 100.0
             # Extract the variances
             errors = list()
             param_table = fit_output.OutputParameters
@@ -186,7 +186,7 @@ try:
                     errors.append(param_table.row(i_row)['Error'])
             variances = np.array(errors) ** 2
             # Compute the variance-covariance matrix
-            var_cov = normalized_var_cov * \
+            var_cov = norm_var_cov * \
                       np.sqrt(variances * variances[np.newaxis].transpose())
             # Compute the likelihood
             likelihood = (4 * np.pi) ** depth *\
@@ -202,5 +202,5 @@ try:
             """
         # return fits_output, fits_prob
         return fits_output
-except:
+except ImportError:
     sys.stderr.write('Unable to import mantid')

@@ -54,7 +54,7 @@ def benchmark():
 @pytest_yield_fixture(scope="session")
 def saxs_benchmark():
     r"""Crysol output for one structure
-    
+
     Yields
     ------
     dict

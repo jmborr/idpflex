@@ -4,11 +4,13 @@ from __future__ import print_function, absolute_import
 import numpy as np
 import pytest
 
+from idpflex import bayes
+from test_helper import sans_benchmark, sans_fit
+
 mantid = pytest.importorskip('mantid')  # skip all test if mantid not found
 from mantid.simpleapi import FlatBackground
 
-from idpflex import bayes
-from test_helper import sans_benchmark, sans_fit
+
 
 def test_model_at_depth(sans_fit):
     tree = sans_fit['tree']
@@ -54,6 +56,7 @@ def test_do_fit_tree(sans_fit):
     # plt.semilogy(chis_squared_weighted)
     # plt.show()
     assert np.argmin(chis_squared_weighted) == sans_fit['depth']
+
 
 if __name__ == '__main__':
     pytest.main()
