@@ -7,8 +7,7 @@ import pytest
 from idpflex import bayes
 
 mantid = pytest.importorskip('mantid')  # skip all test if mantid not found
-from mantid.simpleapi import FlatBackground
-
+from mantid.simpleapi import FlatBackground  # noqa: E402
 
 
 def test_model_at_depth(sans_fit):

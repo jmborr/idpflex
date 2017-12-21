@@ -6,7 +6,6 @@ import os
 import pytest
 import sys
 from copy import deepcopy
-from distutils.version import LooseVersion
 from scipy.cluster.hierarchy import linkage
 
 from idpflex import cnextend as cnx, properties as ps
