@@ -1,14 +1,13 @@
 from __future__ import print_function, absolute_import
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-mantid = pytest.importorskip('mantid')  # skip all test if mantid not found
-from mantid.simpleapi import CreateWorkspace, FlatBackground
-
 from idpflex import bayes
-from test_helper import sans_benchmark, sans_fit
+
+mantid = pytest.importorskip('mantid')  # skip all test if mantid not found
+from mantid.simpleapi import FlatBackground  # noqa: E402
 
 
 def test_model_at_depth(sans_fit):
@@ -52,9 +51,10 @@ def test_do_fit_tree(sans_fit):
     # Weights necessary because chis_s quared flattens above sans_fit['depth']
     weights = 10**np.arange(len(chis_squared))
     chis_squared_weighted = weights*chis_squared
-    #plt.semilogy(chis_squared_weighted)
-    #plt.show()
+    # plt.semilogy(chis_squared_weighted)
+    # plt.show()
     assert np.argmin(chis_squared_weighted) == sans_fit['depth']
+
 
 if __name__ == '__main__':
     pytest.main()

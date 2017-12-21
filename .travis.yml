@@ -6,6 +6,8 @@ python:
   - "3.5"
   - "3.6"
 
+env: PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/tests
+
 before_install:
   - if [[ "${TRAVIS_PYTHON_VERSION}" == "2.7" ]]; then
         wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -23,10 +25,10 @@ install:
         conda install --yes -n testenv flake8;
     fi
   - source activate testenv
-  - pip install codecov lmfit
+  - pip install future six h5py lmfit matplotlib codecov
 
 script:
-  - py.test --cov=qef qef tests
+  - py.test --cov=idpflex idpflex tests
   - if [[ "${TRAVIS_PYTHON_VERSION}" == "3.6" ]]; then
         flake8;
     fi

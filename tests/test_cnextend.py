@@ -3,7 +3,6 @@ from __future__ import print_function, absolute_import
 import pytest
 from scipy.cluster import hierarchy
 
-from test_helper import benchmark
 from idpflex import cnextend as cnx
 
 
@@ -12,7 +11,7 @@ class TestClusterNodeX(object):
     def test_property(self):
         n = cnx.ClusterNodeX(0)
         n._properties['prop'] = True
-        assert n['prop'] == True
+        assert n['prop'] is True
 
     def test_leafs(self, benchmark):
         t = benchmark['tree']
@@ -28,10 +27,10 @@ class TestTree(object):
         t = cnx.Tree()
         t.from_linkage_matrix(benchmark['Z'], node_class=hierarchy.ClusterNode)
         r = t.root
-        assert hasattr(r, 'parent') == False
+        assert hasattr(r, 'parent') is False
         t.from_linkage_matrix(benchmark['Z'], node_class=cnx.ClusterNodeX)
         r = t.root
-        assert r.parent == None
+        assert r.parent is None
         assert len(t) == benchmark['nnodes']
 
     def test_leafs(self, benchmark):
@@ -57,6 +56,7 @@ class TestTree(object):
         t = benchmark['tree']
         ids = [n.id for n in t.clusters_at_depth(depth=3)]
         assert ids == [44732, 44748, 44752, 44753]
+
 
 if __name__ == '__main__':
     pytest.main()

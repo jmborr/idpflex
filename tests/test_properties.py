@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from idpflex import properties as ps
-from test_helper import benchmark, sans_benchmark, saxs_benchmark
 
 
 class TestRegisterDecorateProperties(object):
@@ -117,8 +116,8 @@ class TestPropagators(object):
     def test_propagator_weighted_sum(self, benchmark):
         tree = benchmark['tree']
         ps.propagator_weighted_sum(benchmark['simple_property'], tree)
-        l = benchmark['nleafs']
-        assert tree.root['foo'].bar == int(l * (l-1) / 2)
+        lfs = benchmark['nleafs']
+        assert tree.root['foo'].bar == int(lfs * (lfs-1) / 2)
 
     def test_propagator_size_weighted_sum(self, sans_benchmark):
         tree = sans_benchmark['tree_with_no_property']
