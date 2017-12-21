@@ -1,11 +1,12 @@
 from __future__ import print_function, absolute_import
 
 from six.moves import zip
-from pdb import set_trace as tr
+# from pdb import set_trace as tr
 
 import functools
 import numpy as np
 import numbers
+
 
 def register_as_node_property(cls, nxye):
     r"""Endows a class with the node property protocol.
@@ -38,17 +39,17 @@ def register_as_node_property(cls, nxye):
     """
     def property_item(attribute_name, docstring):
         r"""Factory of the node property items 'name', 'x', 'y', and 'e'
-        
+
         Parameters
         ----------
         attribute_name :  str
-            name of the storage attribute holding the info for the 
+            name of the storage attribute holding the info for the
             respective node property item.
         docstring : str
             description of the storage attribute
         Returns
         -------
-        A node-property item 
+        A node-property item
         """
         def getter(instance):
             return instance.__dict__[attribute_name]
@@ -233,12 +234,12 @@ def propagator_weighted_sum(values, node_tree,
 
     Parameters
     ----------
-    values: list 
+    values: list
         List of property values (of same type), one item for each leaf node.
     node_tree: cnextend.Tree.
         Tree of nodes, with nodes of type ClusterNodeX.
     weights: tuple
-        Callable of two arguments (left-node and right-node) returning 
+        Callable of two arguments (left-node and right-node) returning
         a tuple of left and right weights. Default callable returns (1.0, 1.0)
         always.
     """
@@ -269,7 +270,7 @@ def propagator_weighted_sum(values, node_tree,
 
 def weights_by_size(left_node, right_node):
     r"""Calculate the relative size of two nodes
-    
+
     Parameters
     ----------
     left_node : ClusterNodeX
@@ -292,7 +293,7 @@ sizes of the siblings
 
 Parameters
 ----------
-values: list 
+values: list
     List of property values (of same type), one item for each leaf node.
 node_tree: cnextend.Tree.
     Tree of nodes, with nodes of type ClusterNodeX.

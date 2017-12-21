@@ -4,13 +4,16 @@ from scipy.cluster import hierarchy
 import numpy as np
 from past.builtins import xrange
 
+
 class ClusterNodeX(hierarchy.ClusterNode):
     """
     Extension of hierarchy.ClusterNode to accomodate a parent reference and a dictionary of
     properties associated to a specific node, like SANS profile
     """
     def __init__(self, *args, **kwargs):
-        super(ClusterNodeX, self).__init__(*args, **kwargs)
+        # Using super unfeasible since ClusterNode does not inherit from object
+        # super(ClusterNodeX, self).__init__(*args, **kwargs)
+        hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None
         self._properties = dict()
 
@@ -144,7 +147,6 @@ class Tree(object):
             clusters.extend((cmax.left, cmax.right))
             clusters.sort(key=lambda cluster: cluster.id)
         return clusters
-
 
     def clusters_at_depth(self, depth=0):
         r"""Cluster nodes at a given depth from the root node

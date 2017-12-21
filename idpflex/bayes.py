@@ -5,10 +5,11 @@ against an experimental profile.
 
 from __future__ import print_function, absolute_import
 
+import sys
+
 try:
     from mantid.simpleapi import (Fit, CreateWorkspace, TabulatedFunction,
                                   CompositeFunctionWrapper, FlatBackground)
-
 
     def model_at_node(node, property_name):
         r"""Fit model as a Mantid Tabulated function with only Scaling
@@ -35,7 +36,6 @@ try:
         c += f
         c += FlatBackground()
         return c
-
 
     def model_at_depth(tree, depth, property_name):
         r"""Fit model as a linear combination of functions for each node of the
@@ -67,7 +67,6 @@ try:
         [c.fixAll(param) for param in ('Shift', 'XScaling')]
         c.constrainAll('0<Scaling')
         return c
-
 
     def do_fit(a_function, experiment, prefix='fit', run_fabada=False):
         r"""Carries out fitting of a model against an experimental profile.
@@ -115,7 +114,7 @@ try:
                         'ConvergedChain={}_convchains,'.format(prefix) + \
                         'ChainLength={},'.format(chain_length) + \
                         'NumberBinsPDF=50,ConvergenceCriteria=0.1'
-            other_function = fit_output.Function
+            # other_function = fit_output.Function
             fit_output = Fit(Function=fit_output.Function,
                              InputWorkspace=ws,
                              WorkspaceIndex=0,
@@ -125,7 +124,6 @@ try:
                              MaxIterations=2000*degrees_of_freedom)
 
         return fit_output
-
 
     def do_fit_at_depth_tree(tree, experiment, property_name, max_depth=10,
                              background=FlatBackground()):
@@ -153,7 +151,7 @@ try:
 
         # Fit each level of the tree
         fits_output = list()
-        fits_prob = list()
+        # fits_prob = list()
         for depth in range(max_depth):
             print('Fitting at depth = {}'.format(depth))
             model = model_at_depth(tree, depth, property_name)
@@ -202,7 +200,7 @@ try:
             prior_prob = np.math.factorial(depth) / scaling ** depth
             fits_prob.append(likelihood * prior_prob)
             """
-        #return fits_output, fits_prob
+        # return fits_output, fits_prob
         return fits_output
-else:
+except:
     sys.stderr.write('Unable to import mantid')
