@@ -49,12 +49,12 @@ class TestTree(object):
 
     def test_clusters_above_depth(self, benchmark):
         t = benchmark['tree']
-        ids = [n.id for n in t.clusters_above_depth(depth=3)]
+        ids = [n.id for n in t.nodes_above_depth(depth=3)]
         assert ids == [44732, 44748, 44752, 44753, 44754, 44755, 44756]
 
     def test_clusters_at_depth(self, benchmark):
         t = benchmark['tree']
-        ids = [n.id for n in t.clusters_at_depth(depth=3)]
+        ids = [n.id for n in t.nodes_at_depth(depth=3)]
         assert ids == [44732, 44748, 44752, 44753]
 
 

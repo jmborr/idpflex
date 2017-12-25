@@ -1,12 +1,14 @@
 from __future__ import print_function, absolute_import
 
-import h5py
-import numpy as np
 import os
-import pytest
 import sys
 from copy import deepcopy
+
+import pytest
+import h5py
+import numpy as np
 from scipy.cluster.hierarchy import linkage
+import MDAnalysis as mda
 
 from idpflex import cnextend as cnx, properties as ps
 
@@ -33,7 +35,7 @@ class SimpleProperty(object):
         self.error_bar = 0.0
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def benchmark():
     Z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
     return {'z': Z,
@@ -44,11 +46,26 @@ def benchmark():
             }
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
+def trajectory_benchmark():
+    r"""Load a trajectory to a MDAnalysis universe
+
+    Returns
+    -------
+    MDAnalysis.core.universe.Universe
+    """
+    sim_dir = os.path.join(data_dir, 'simulation')
+    u = mda.Universe(os.path.join(sim_dir, 'hiAPP.pdb'))
+    trajectory = os.path.join(sim_dir, 'hiAPP.dcd')
+    u.load_new(trajectory, format='DCD')
+    return u
+
+
+@pytest.fixture(scope='session')
 def saxs_benchmark():
     r"""Crysol output for one structure
 
-    Yields
+    Returns
     ------
     dict
         'crysol_file': absolute path to file.
@@ -58,7 +75,7 @@ def saxs_benchmark():
     return dict(crysol_file=crysol_file)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def sans_benchmark(request):
     r"""Sassena output containing 1000 I(Q) profiles for the hiAPP centroids.
 
@@ -96,7 +113,7 @@ def sans_benchmark(request):
                 tree_with_no_property=tree)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def sans_fit(sans_benchmark):
     r"""
 
@@ -123,7 +140,7 @@ def sans_fit(sans_benchmark):
     # particular depth
     depth = 6
     coeff = (0.45, 0.00, 0.00, 0.10, 0.25, 0.00, 0.20)  # they must add to one
-    clusters = tree.clusters_at_depth(depth)
+    clusters = tree.nodes_at_depth(depth)
     nclusters = 1 + depth  # depth=0 corresponds to the root node (nclusters=1)
     sans_property = clusters[0][name]
     profile = coeff[0] * sans_property.profile  # init with the first cluster

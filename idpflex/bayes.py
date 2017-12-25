@@ -58,7 +58,7 @@ try:
         """
 
         c = CompositeFunctionWrapper()
-        for node in tree.clusters_at_depth(depth):
+        for node in tree.nodes_at_depth(depth):
             x = list(node[property_name].x)
             y = list(node[property_name].y)
             f = TabulatedFunction(X=x, Y=y)
