@@ -6,21 +6,29 @@ from past.builtins import xrange
 
 
 class ClusterNodeX(hierarchy.ClusterNode):
-    r"""Extension of hierarchy.ClusterNode to accomodate a parent reference and
-    a dictionary of properties associated to a specific node, like SANS profile
+    r"""Extension of :py:class:`~scipy:scipy.cluster.hierarchy.ClusterNode`
+    to accommodate a parent reference and a protected dictionary
+    of properties.
     """
     def __init__(self, *args, **kwargs):
-        # Using super unfeasible since ClusterNode does not inherit from object
+        # Using of *super* is unfeasible because *ClusterNode* does not
+        # inherit from *object*.
         # super(ClusterNodeX, self).__init__(*args, **kwargs)
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None
         self._properties = dict()
 
     def __getitem__(self, name):
-        """
-        property names are treated as keys of self
-        :param name: name of the attribute or of the property
-        :return: property or attribute of self.
+        r"""Fetch a property from protected `_properties` dictionary.
+
+        Parameters
+        ----------
+        name : str
+            name of the property
+
+        Returns
+        -------
+        property object, or `None` if no property is found with *name*
         """
         if name in self._properties:
             return self._properties[name]
@@ -29,75 +37,106 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
     @property
     def leafs(self):
-        """
-        Find the leaf nodes under this cluster node
-        :return: list of node leafs ordered by increasing ID
+        r"""Find the leaf nodes under this cluster node.
+
+        Returns
+        -------
+        :class:`list`
+            node leafs ordered by increasing ID
         """
         return sorted(self.pre_order(lambda x: x), key=lambda x: x.id)
 
     def add_property(self, a_property):
-        """
-        Insert or update a property in the set of properties
-        :param a_property: property instance
+        r"""Insert or update a property in the set of properties
+
+        Parameters
+        ----------
+        a_property : :class:`~idpflex.properties.ProfileProperty`
+            a property instance
         """
         self._properties[a_property.name] = a_property
 
 
 class Tree(object):
-    """
-    Hierarchical binary tree
+    r"""Hierarchical binary tree.
+
+    Parameters
+    ----------
+    z : :class:`~numpy:numpy.ndarray`
+        linkage matrix from which to create the tree. See
+        :func:`~scipy:scipy.cluster.hierarchy.linkage`
     """
 
-    def __init__(self, Z=None):
+    def __init__(self, z=None):
         self.root = None  # topmost node
-        self.Z = Z  # linkage matrix from which to create the tree
+        self.z = z
         # list of nodes, position in the list is node ID. Last is the root node
         self._nodes = list()  # list of nodes, starting from the leaf nodes
         self.nleafs = 0  # a leaf is a node at the bottom of the tree
-        if self.Z is not None:
-            self.from_linkage_matrix(self.Z)
+        if self.z is not None:
+            self.from_linkage_matrix(self.z)
 
     def __iter__(self):
-        """Navigate the tree in order of decreasing node ID, starting from
-        root node"""
+        r"""Navigate the tree in order of decreasing node ID, starting from
+        root node
+        """
         return (node for node in self._nodes[::-1])
 
     def __getitem__(self, index):
-        """Return items from _nodes attribute"""
+        r"""Fetch items from *_nodes* attribute
+
+        Returns
+        -------
+        :class:`~idpflex.cnextend.ClusterNodeX`
+            node instance
+        """
         return self._nodes.__getitem__(index)
 
     def __len__(self):
         """
-        :return: Number of nodes in the tree
+        Returns
+        -------
+        int
+            Number of nodes in the tree
         """
         return len(self._nodes)
 
     @property
     def leafs(self):
+        r"""
+
+        Returns
+        -------
+        :py:class:`list`
+            leaf nodes ordered by increasing ID
+        """
         return self._nodes[:self.nleafs]
 
-    def from_linkage_matrix(self, Z, node_class=ClusterNodeX):
+    def from_linkage_matrix(self, z, node_class=ClusterNodeX):
+        """Refactored :func:`~scipy:scipy.cluster.hierarchy.to_tree`
+        converts a hierarchical clustering encoded in matrix `z`
+        (by linkage) into a convenient tree object.
+
+        Each *node_class* instance has a *left*, *right*, *dist*, *id*,
+        and *count* attribute. The *left* and *right* attributes point
+        to *node_class* instances that were combined to generate the
+        cluster. If both are *None* then *node_class* is a leaf node,
+        its count must be 1, and its distance is meaningless but set to 0.
+
+        Parameters
+        ----------
+        z : :class:`~numpy:numpy.ndarray`
+            linkage matrix. See :func:`~scipy:scipy.cluster.hierarchy.linkage`
+        node_class : :class:`~idpflex.cnextend.ClusterNodeX`
+            the type of nodes composing the tree. Now supports
+            :class:`~idpflex.cnextend.ClusterNodeX`
+            and parent class
+            :class:`~scipy:scipy.cluster.hierarchy.ClusterNode`
         """
-        Refactored scipy.cluster.hierarchy.to_tree
-        Converts a hierarchical clustering encoded in the matrix ``Z`` (by
-        linkage) into an easy-to-use tree object.
-
-        The reference r to the root node_class object is returned.
-
-        Each node_class object has a left, right, dist, id, and count
-        attribute. The left and right attributes point to node_class objects
-        that were combined to generate the cluster. If both are None then
-        the node_class object is a leaf node, its count must be 1, and its
-        distance is meaningless but set to 0.
-
-        :param Z: (ndarray) linkage matrix (scipy.cluster.hierarchy.linkage)
-        :param node_class the type of nodes composing the tree. Now supports
-        ClusterNodeX and parent class scipy.cluster.hierarchy.ClusterNode
-        """
-        Z = np.asarray(Z, order='c')
-        hierarchy.is_valid_linkage(Z, throw=True, name='Z')
+        z = np.asarray(z, order='c')
+        hierarchy.is_valid_linkage(z, throw=True, name='z')
         # Number of original objects is equal to the number of rows minus 1.
-        n = Z.shape[0] + 1
+        n = z.shape[0] + 1
         # Create a list full of None's to store the node objects
         d = [None] * (n * 2 - 1)
         # Create the nodes corresponding to the n original objects.
@@ -105,23 +144,23 @@ class Tree(object):
             d[i] = node_class(i)
         nd = None
         for i in xrange(0, n - 1):
-            fi = int(Z[i, 0])
-            fj = int(Z[i, 1])
+            fi = int(z[i, 0])
+            fj = int(z[i, 1])
             if fi > i + n:
-                raise ValueError(('Corrupt matrix Z. Index to derivative '
+                raise ValueError(('Corrupt matrix z. Index to derivative '
                                   'cluster is used before it is formed. See '
                                   'row %d, column 0') % fi)
             if fj > i + n:
-                raise ValueError(('Corrupt matrix Z. Index to derivative '
+                raise ValueError(('Corrupt matrix z. Index to derivative '
                                   'cluster is used before it is formed. See '
                                   'row %d, column 1') % fj)
-            nd = node_class(i + n, left=d[fi], right=d[fj], dist=Z[i, 2])
+            nd = node_class(i + n, left=d[fi], right=d[fj], dist=z[i, 2])
             if hasattr(nd, 'parent'):
                 # True for ClusterNodeX objects
                 d[fi].parent = nd
                 d[fj].parent = nd
-            if Z[i, 3] != nd.count:
-                raise ValueError(('Corrupt matrix Z. The count Z[%d,3] is '
+            if z[i, 3] != nd.count:
+                raise ValueError(('Corrupt matrix z. The count z[%d,3] is '
                                   'incorrect.') % i)
             d[n + i] = nd
         self.nleafs = n
@@ -138,7 +177,7 @@ class Tree(object):
 
         Returns
         -------
-        clusters : list
+        list
             List of nodes ordered by increasing ID. Last one is the root node
         """
         clusters = [self.root, ]

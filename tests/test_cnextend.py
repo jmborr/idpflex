@@ -25,10 +25,10 @@ class TestTree(object):
 
     def test_from_linkage_matrix(self, benchmark):
         t = cnx.Tree()
-        t.from_linkage_matrix(benchmark['Z'], node_class=hierarchy.ClusterNode)
+        t.from_linkage_matrix(benchmark['z'], node_class=hierarchy.ClusterNode)
         r = t.root
         assert hasattr(r, 'parent') is False
-        t.from_linkage_matrix(benchmark['Z'], node_class=cnx.ClusterNodeX)
+        t.from_linkage_matrix(benchmark['z'], node_class=cnx.ClusterNodeX)
         r = t.root
         assert r.parent is None
         assert len(t) == benchmark['nnodes']
