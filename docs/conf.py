@@ -293,3 +293,6 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'lmfit': ('https://lmfit.github.io/lmfit-py', None)
 }
+
+# Suppress certain warnings
+suppress_warnings = ['image.nonlocal_uri']
