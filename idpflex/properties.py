@@ -123,7 +123,7 @@ class ScalarProperty(object):
         self.e = e
         self.y = y
 
-    def setScalar(self, y):
+    def set_scalar(self, y):
         if not isinstance(y, numbers.Real):
             raise TypeError("y must be a non-complex number")
         self.y = y
@@ -207,7 +207,7 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
-        """
+        """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 1))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
@@ -220,7 +220,7 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
-        """
+        """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 3))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
@@ -290,11 +290,11 @@ def propagator_weighted_sum(values, node_tree,
         raise ValueError(msg)
     for i, leaf in enumerate(node_tree.leafs):
         leaf.add_property(values[i])
-    PropertyClass = values[0].__class__  # type of the property
+    property_class = values[0].__class__  # type of the property
     name = values[0].name  # name of the property
     # Propagate up the tree nodes
     for node in node_tree._nodes[node_tree.nleafs:]:
-        prop = PropertyClass()
+        prop = property_class()
         prop.name = name
         left_prop = node.left[name]
         right_prop = node.right[name]

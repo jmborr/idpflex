@@ -62,19 +62,19 @@ class Tree(object):
 
     Parameters
     ----------
-    Z : :class:`~numpy:numpy.ndarray`
+    z : :class:`~numpy:numpy.ndarray`
         linkage matrix from which to create the tree. See
         :func:`~scipy:scipy.cluster.hierarchy.linkage`
     """
 
-    def __init__(self, Z=None):
+    def __init__(self, z=None):
         self.root = None  # topmost node
-        self.Z = Z
+        self.z = z
         # list of nodes, position in the list is node ID. Last is the root node
         self._nodes = list()  # list of nodes, starting from the leaf nodes
         self.nleafs = 0  # a leaf is a node at the bottom of the tree
-        if self.Z is not None:
-            self.from_linkage_matrix(self.Z)
+        if self.z is not None:
+            self.from_linkage_matrix(self.z)
 
     def __iter__(self):
         r"""Navigate the tree in order of decreasing node ID, starting from
@@ -112,9 +112,9 @@ class Tree(object):
         """
         return self._nodes[:self.nleafs]
 
-    def from_linkage_matrix(self, Z, node_class=ClusterNodeX):
+    def from_linkage_matrix(self, z, node_class=ClusterNodeX):
         """Refactored :func:`~scipy:scipy.cluster.hierarchy.to_tree`
-        converts a hierarchical clustering encoded in matrix `Z`
+        converts a hierarchical clustering encoded in matrix `z`
         (by linkage) into a convenient tree object.
 
         Each *node_class* instance has a *left*, *right*, *dist*, *id*,
@@ -125,7 +125,7 @@ class Tree(object):
 
         Parameters
         ----------
-        Z : :class:`~numpy:numpy.ndarray`
+        z : :class:`~numpy:numpy.ndarray`
             linkage matrix. See :func:`~scipy:scipy.cluster.hierarchy.linkage`
         node_class : :class:`~idpflex.cnextend.ClusterNodeX`
             the type of nodes composing the tree. Now supports
@@ -133,10 +133,10 @@ class Tree(object):
             and parent class
             :class:`~scipy:scipy.cluster.hierarchy.ClusterNode`
         """
-        Z = np.asarray(Z, order='c')
-        hierarchy.is_valid_linkage(Z, throw=True, name='Z')
+        z = np.asarray(z, order='c')
+        hierarchy.is_valid_linkage(z, throw=True, name='z')
         # Number of original objects is equal to the number of rows minus 1.
-        n = Z.shape[0] + 1
+        n = z.shape[0] + 1
         # Create a list full of None's to store the node objects
         d = [None] * (n * 2 - 1)
         # Create the nodes corresponding to the n original objects.
@@ -144,23 +144,23 @@ class Tree(object):
             d[i] = node_class(i)
         nd = None
         for i in xrange(0, n - 1):
-            fi = int(Z[i, 0])
-            fj = int(Z[i, 1])
+            fi = int(z[i, 0])
+            fj = int(z[i, 1])
             if fi > i + n:
-                raise ValueError(('Corrupt matrix Z. Index to derivative '
+                raise ValueError(('Corrupt matrix z. Index to derivative '
                                   'cluster is used before it is formed. See '
                                   'row %d, column 0') % fi)
             if fj > i + n:
-                raise ValueError(('Corrupt matrix Z. Index to derivative '
+                raise ValueError(('Corrupt matrix z. Index to derivative '
                                   'cluster is used before it is formed. See '
                                   'row %d, column 1') % fj)
-            nd = node_class(i + n, left=d[fi], right=d[fj], dist=Z[i, 2])
+            nd = node_class(i + n, left=d[fi], right=d[fj], dist=z[i, 2])
             if hasattr(nd, 'parent'):
                 # True for ClusterNodeX objects
                 d[fi].parent = nd
                 d[fj].parent = nd
-            if Z[i, 3] != nd.count:
-                raise ValueError(('Corrupt matrix Z. The count Z[%d,3] is '
+            if z[i, 3] != nd.count:
+                raise ValueError(('Corrupt matrix z. The count z[%d,3] is '
                                   'incorrect.') % i)
             d[n + i] = nd
         self.nleafs = n

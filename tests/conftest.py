@@ -36,7 +36,7 @@ class SimpleProperty(object):
 @pytest.fixture(scope="session")
 def benchmark():
     Z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
-    return {'Z': Z,
+    return {'z': Z,
             'tree': cnx.Tree(Z),
             'nnodes': 44757,
             'nleafs': 22379,
