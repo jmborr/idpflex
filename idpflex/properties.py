@@ -122,7 +122,7 @@ class ScalarProperty(object):
 @decorate_as_node_property((('name', '(str) name of the profile'),
                             ('qvalues', '(:class:`~numpy:numpy.ndarray`) momentum transfer values'),
                             ('profile', '(:class:`~numpy:numpy.ndarray`) profile intensities'),
-                            ('errors', '(:class:`~numpy:numpy.ndarray`) intensity errors')))
+                            ('errors', '(:class:`~numpy:numpy.ndarray`) intensity errors')))  # noqa: E501
 class ProfileProperty(object):
     r"""Implementation of a node property valid for SANS or X-Ray data.
 
