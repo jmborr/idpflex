@@ -40,11 +40,6 @@ def register_as_node_property(cls, nxye):
         ('qvalues', 'momentum transfer values'),
         ('profile', 'profile intensities'),
         ('errors', 'intensity errors'))
-
-    Returns
-    -------
-    Type
-        decorated class type
     """
     def property_item(attr_name, docstring):
         r"""Factory of the node property items *name*, *x*, *y*, and *e*
@@ -86,11 +81,6 @@ def decorate_as_node_property(xye):
     ----------
     xye : list
         list of (name, description) pairs denoting the property items
-
-    Returns
-    -------
-    :py:func:`function`
-        decorator function
     """
     def decorate(cls):
         return register_as_node_property(cls, xye)

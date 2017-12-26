@@ -41,7 +41,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
         Returns
         -------
-        list
+        :class:`list`
             node leafs ordered by increasing ID
         """
         return sorted(self.pre_order(lambda x: x), key=lambda x: x.id)
@@ -87,7 +87,7 @@ class Tree(object):
 
         Returns
         -------
-        ClusterNodeX
+        :class:`~idpflex.cnextend.ClusterNodeX`
             node instance
         """
         return self._nodes.__getitem__(index)
@@ -107,7 +107,7 @@ class Tree(object):
 
         Returns
         -------
-        list
+        :py:class:`list`
             leaf nodes ordered by increasing ID
         """
         return self._nodes[:self.nleafs]
