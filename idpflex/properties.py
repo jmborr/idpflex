@@ -257,7 +257,7 @@ class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
             self.name = 'saxs'   # Default name
 
 
-def propagator_weighted_sum(values, node_tree,
+def propagator_weighted_sum(values, tree,
                             weights=lambda left_node, right_node: (1.0, 1.0)):
     r"""Calculate a property of each node as the sum of its siblings' property
     values. Propagation applies only to non-leaf nodes.
@@ -266,7 +266,7 @@ def propagator_weighted_sum(values, node_tree,
     ----------
     values: list
         List of property values (of same type), one item for each leaf node.
-    node_tree: :class:`~idpflex.cnextend.Tree`
+    tree: :class:`~idpflex.cnextend.Tree`
         Tree of :class:`~idpflex.cnextend.ClusterNodeX` nodes
     weights: tuple
         Callable of two arguments (left-node and right-node) returning
@@ -274,16 +274,16 @@ def propagator_weighted_sum(values, node_tree,
         always.
     """
     # Insert a property for each leaf
-    if len(values) != node_tree.nleafs:
+    if len(values) != tree.nleafs:
         msg = "len(values)={} but there are {} leafs".format(len(values),
-                                                             node_tree.nleafs)
+                                                             tree.nleafs)
         raise ValueError(msg)
-    for i, leaf in enumerate(node_tree.leafs):
+    for i, leaf in enumerate(tree.leafs):
         leaf.add_property(values[i])
     property_class = values[0].__class__  # type of the property
     name = values[0].name  # name of the property
     # Propagate up the tree nodes
-    for node in node_tree._nodes[node_tree.nleafs:]:
+    for node in tree._nodes[tree.nleafs:]:
         prop = property_class()
         prop.name = name
         left_prop = node.left[name]

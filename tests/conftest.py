@@ -8,6 +8,7 @@ import pytest
 import h5py
 import numpy as np
 from scipy.cluster.hierarchy import linkage
+from scipy.spatial.distance import squareform
 import MDAnalysis as mda
 
 from idpflex import cnextend as cnx, properties as ps
@@ -36,10 +37,22 @@ class SimpleProperty(object):
 
 
 @pytest.fixture(scope='session')
+def small_tree():
+    n_leafs = 9
+    a = np.arange(n_leafs)
+    dist_mat = squareform(np.square(a - a[:, np.newaxis]))
+    z = linkage(dist_mat, method='complete')
+    return {'dist_mat': dist_mat,
+            'z': z,
+            'tree': cnx.Tree(z),
+            'simple_property': [SimpleProperty(i) for i in range(n_leafs)],
+            }
+
+@pytest.fixture(scope='session')
 def benchmark():
-    Z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
-    return {'z': Z,
-            'tree': cnx.Tree(Z),
+    z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
+    return {'z': z,
+            'tree': cnx.Tree(z),
             'nnodes': 44757,
             'nleafs': 22379,
             'simple_property': [SimpleProperty(i) for i in range(22379)],
@@ -48,16 +61,16 @@ def benchmark():
 
 @pytest.fixture(scope='session')
 def trajectory_benchmark():
-    r"""Load a trajectory to a MDAnalysis universe
+    r"""Load a trajectory into an MDAnalysis Universe instance
 
     Returns
     -------
-    MDAnalysis.core.universe.Universe
+    :class:`~MDAnalysis:MDAnalysis.core.universe.Universe`
     """
     sim_dir = os.path.join(data_dir, 'simulation')
     u = mda.Universe(os.path.join(sim_dir, 'hiAPP.pdb'))
-    trajectory = os.path.join(sim_dir, 'hiAPP.dcd')
-    u.load_new(trajectory, format='DCD')
+    trajectory = os.path.join(sim_dir, 'hiAPP.xtc')
+    u.load_new(trajectory)
     return u
 
 

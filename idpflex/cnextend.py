@@ -39,12 +39,13 @@ class ClusterNodeX(hierarchy.ClusterNode):
         else:
             return None
 
+    @property
     def tree(self):
         r"""Tree object owning the node
 
         Returns
         -------
-        Tree
+        :class:`~idpflex.cnextend.Tree`
         """
         return self._tree
 
@@ -65,7 +66,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
         Returns
         -------
-        list
+        :class:`list`
         """
         return list(leaf.id for leaf in self.leafs)
 
@@ -91,7 +92,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
         Returns
         -------
-        numpy.ndarray
+        :class:`~numpy:numpy.ndarray`
             square distance matrix MxM between the M leafs under the node
         """
         return distance_submatrix(dist_mat, self.leaf_ids)
@@ -106,7 +107,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
         Parameters
         ----------
-        dist_mat: numpy.ndarray
+        dist_mat: :class:`~numpy:numpy.ndarray`
             condensed or square distance matrix MxM or NxN among all N leafs
             in the tree or among all M leafs under the node.
             If dealing with the distance matrix among all leaves in the
@@ -116,7 +117,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
         Returns
         -------
-        ClusterNodeX
+        :class:`~idpflex.cnextend.ClusterNodeX`
             representative leaf node
         """
         # Find out if matrix is condensed
@@ -237,7 +238,8 @@ class Tree(object):
             if hasattr(nd, '_tree'):  # True for ClusterNodeX objects
                 nd._tree = self
             if z[i, 3] != nd.count:
-                raise ValueError('Corrupt matrix z. The count z[{}, 3] is incorrect'.format(i)
+                message = 'Corrupt matrix z. The count z[{}, 3] is incorrect'
+                raise ValueError(message.format(i))
             d[n + i] = nd
         self.nleafs = n
         self.root = nd
@@ -253,7 +255,7 @@ class Tree(object):
 
         Returns
         -------
-        list
+        :py:class:`list`
             List of nodes ordered by increasing ID. Last one is the root node
         """
         nodes = [self.root, ]
@@ -273,7 +275,7 @@ class Tree(object):
 
         Returns
         -------
-        list
+        :py:class:`list`
             List of nodes corresponding to that particular level
         """
         if depth == 0:

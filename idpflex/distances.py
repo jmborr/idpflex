@@ -36,14 +36,14 @@ def rmsd_matrix(xyz, condensed=False):
 
     Parameters
     ----------
-    xyz : numpy.ndarray
+    xyz : :class:`~numpy:numpy.ndarray`
         Bare coordinates shape=(N, M, 3) with N: number of frames,
         M: number of atoms
     condensed: bool
         Flag return matrix as square or condensed
     Returns
     -------
-    numpy.ndarray
+    :class:`~numpy:numpy.ndarray`
         Square NxN or 1d N*(N+1)/2 RMSD matrix
     """
     n = len(xyz)
@@ -62,14 +62,23 @@ def rmsd_matrix(xyz, condensed=False):
 def distance_submatrix(dist_mat, indexes):
     r"""Extract matrix of distances for a subset of indexes
 
+    If matrix is in condensed format, then the submatrix is returned in
+    condensed format too.
+
     Parameters
     ----------
-    dist_mat: numpy.ndarray
+    dist_mat: :class:`~numpy:numpy.ndarray`
         NxN distance matrix
     indexes: sequence of int
         sequence of indexes from which a submatrix is extracted.
     Returns
     -------
-    numpy.ndarray
+    :class:`~numpy:numpy.ndarray`
     """
-    return dist_mat[indexes][:, indexes]
+    m = dist_mat
+    if dist_mat.ndim == 1:
+        m = squareform(dist_mat)
+    subm = m[indexes][:, indexes]
+    if dist_mat.ndim == 1:
+        subm = squareform(subm)
+    return subm
