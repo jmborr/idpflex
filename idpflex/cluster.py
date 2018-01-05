@@ -50,7 +50,7 @@ def cluster_trajectory(a_universe, selection='not name H*',
     # Fragmentation of the trajectory
     n_frame = len(a_universe.trajectory)
     n_segments = int(n_frame / segment_length)
-    nc = max(1, int(n_representatives / n_segments))  # number of clusters per segment
+    nc = max(1, int(n_representatives / n_segments))  # clusters per segment
     rep_ifr = list()  # frame indexes of representative structures
 
     # Hierarchical clustering on each trajectory fragment

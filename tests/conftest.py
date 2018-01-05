@@ -48,6 +48,7 @@ def small_tree():
             'simple_property': [SimpleProperty(i) for i in range(n_leafs)],
             }
 
+
 @pytest.fixture(scope='session')
 def benchmark():
     z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))

@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 
 import pytest
 import numpy as np
+from numpy.testing import assert_array_equal
 from scipy.cluster import hierarchy
 
 from idpflex import cnextend as cnx
@@ -26,12 +27,14 @@ class TestClusterNodeX(object):
         a_cluster = t[-4]  # leafs have indexes 6, 7, 8
         dist_submat = a_cluster.distance_submatrix(small_tree['dist_mat'])
         reference = np.array([1, 4, 1])
+        assert_array_equal(dist_submat, reference)
 
     def test_representative(self, small_tree):
         t = small_tree['tree']
         a_cluster = t[-4]
         r = a_cluster.representative(small_tree['dist_mat'])
         assert r.id == 7
+
 
 class TestTree(object):
 
