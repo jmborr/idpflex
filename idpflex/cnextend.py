@@ -120,6 +120,8 @@ class ClusterNodeX(hierarchy.ClusterNode):
         :class:`~idpflex.cnextend.ClusterNodeX`
             representative leaf node
         """
+        if len(self.leafs) == 1:
+            return self
         # Find out if matrix is condensed
         square_dist_mat = dist_mat
         if dist_mat.ndim == 1:

@@ -1,5 +1,8 @@
+import sys
+
 from scipy.cluster import hierarchy
 from tqdm import tqdm
+
 from idpflex.utils import returns_tuple
 from idpflex.distances import (rmsd_matrix, extract_coordinates)
 from idpflex.cnextend import Tree
@@ -51,6 +54,7 @@ def cluster_trajectory(a_universe, selection='not name H*',
     rep_ifr = list()  # frame indexes of representative structures
 
     # Hierarchical clustering on each trajectory fragment
+    sys.stdout.write('Clustering the trajectory...\n')
     for i_segment in tqdm(range(n_segments)):
         indexes = range(i_segment * segment_length,
                         (i_segment + 1) * segment_length)
