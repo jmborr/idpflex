@@ -9,6 +9,8 @@ from idpflex.cnextend import Tree
 from idpflex.properties import ScalarProperty
 
 info = """Results from clustering
+idx : :class:`list`
+    Frame indexes for the representative structures (index begin at zero)
 rmsd : :class:`~numpy:numpy.ndarray`
     RMDS matrix between representative structures
 tree : :class:`~idpflex.cnextend.Tree`
@@ -16,7 +18,7 @@ tree : :class:`~idpflex.cnextend.Tree`
     `iframe` containing the frame index of the corresponding representative
     structure.
 """
-ClusterTrove = returns_tuple('ClusterTrove', 'rmsd tree',
+ClusterTrove = returns_tuple('ClusterTrove', 'idx rmsd tree',
                              doc=info)
 
 
@@ -30,7 +32,7 @@ def cluster_trajectory(a_universe, selection='not name H*',
 
     Parameters
     ----------
-    a_universe :  MDAnalysis.core.universe.Universe
+    a_universe : :class:`~MDAnalysis.core.universe.Universe
         Topology and trajectory.
     selection : str
         atoms for which to calculate RMSD
@@ -53,8 +55,14 @@ def cluster_trajectory(a_universe, selection='not name H*',
     nc = max(1, int(n_representatives / n_segments))  # clusters per segment
     rep_ifr = list()  # frame indexes of representative structures
 
+    info = """Clustering the trajectory:
+Creating {} representatives by partitioning {} frames into {} segments
+and retrieving {} representatives from each segment.
+    """.format(nc * n_segments, n_frame, n_segments, nc)
+    sys.stdout.write(info)
+    sys.stdout.flush()
+
     # Hierarchical clustering on each trajectory fragment
-    sys.stdout.write('Clustering the trajectory...\n')
     for i_segment in tqdm(range(n_segments)):
         indexes = range(i_segment * segment_length,
                         (i_segment + 1) * segment_length)
@@ -65,6 +73,7 @@ def cluster_trajectory(a_universe, selection='not name H*',
             # Find the frame of each representative structure
             i_frame = i_segment * segment_length + node.representative(rmsd).id
             rep_ifr.append(i_frame)
+    rep_ifr.sort()
 
     # Cluster the representative structures
     xyz = extract_coordinates(a_universe, group, rep_ifr)
@@ -73,4 +82,4 @@ def cluster_trajectory(a_universe, selection='not name H*',
     for ileaf, leaf in enumerate(tree.leafs):
         leaf.add_property(ScalarProperty(name='iframe', y=rep_ifr[ileaf]))
 
-    return ClusterTrove(rmsd, tree)
+    return ClusterTrove(rep_ifr, rmsd, tree)

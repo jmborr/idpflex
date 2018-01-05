@@ -1,8 +1,10 @@
 from __future__ import print_function, absolute_import
 
+import os
 from six.moves import zip
-# from pdb import set_trace as tr
-
+import subprocess
+import tempfile
+import fnmatch
 import functools
 import numpy as np
 import numbers
@@ -164,6 +166,10 @@ class SansLoaderMixin(object):
             item key where profiles are stored in the HDF5 file
         param index : int
             profile index, if data contains more than one profile
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty
         """
         q = handle['qvectors'][:, 0]  # q values listed in the X component
         i = handle[profile_key][:, index][:, 0]  # profile
@@ -174,6 +180,7 @@ class SansLoaderMixin(object):
         self.qvalues = np.array(q, dtype=np.float)
         self.profile = np.array(i, dtype=np.float)
         self.errors = np.zeros(len(q), dtype=np.float)
+        return self
 
 
 class SansProperty(ProfileProperty, SansLoaderMixin):
@@ -197,11 +204,16 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty
         """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 1))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
         self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
 
     def from_crysol_fit(self, file_name):
         r"""Load profile from a `crysol \*.fit <https://www.embl-hamburg.de/biosaxs/manuals/crysol.html#output>`_ file.
@@ -210,11 +222,61 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty
         """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 3))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
         self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
+
+    def from_crysol_pdb(self, file_name, exec='crysol',
+                        args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
+                        silent=True):
+        r"""Calculate profile with crysol from a PDB file
+
+        Parameters
+        ----------
+        file_name : str
+            Path to PDB file
+        exec : str
+            Command to invoke crysol
+        args : str
+            Arguments to pass to crysol
+        silent : bool
+            Suppress crysol standard output and error
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty
+        """
+        # Write crysol file within a temporary directory
+        curr_dir = os.getcwd()
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        call_stack = [exec] + args.split() + [file_name]
+        if silent:
+            FNULL = open(os.devnull, 'w')  # silence crysol output
+            subprocess.call(call_stack, stdout=FNULL, stderr=subprocess.STDOUT)
+        else:
+            subprocess.call(call_stack)
+        # Load the crysol file
+        ext_2_load = dict(int=self.from_crysol_int, fit=self.from_crysol_fit)
+        stop_search = False
+        for name in os.listdir(temp_dir):
+            for ext in ext_2_load:
+                if fnmatch.fnmatch(name, '*.{}'.format(ext)):
+                    ext_2_load[ext](name)
+                    stop_search = True
+                    break
+            if stop_search:
+                break
+        # Delete the temporary directory
+        os.chdir(curr_dir)
+        subprocess.call('/bin/rm -rf {}'.format(temp_dir).split())
+        return self
 
     def from_ascii(self, file_name):
         r"""Load profile from an ascii file.
@@ -229,11 +291,16 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty
         """
         contents = np.loadtxt(file_name, skiprows=0, usecols=(0, 1, 2))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
         self.errors = contents[:, 2]
+        return self
 
     def to_ascii(self, file_name):
         r"""Save profile as a three-column ascii file.
