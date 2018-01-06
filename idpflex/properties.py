@@ -207,7 +207,7 @@ class SaxsLoaderMixin(object):
 
         Returns
         -------
-        self : :class:`~idpflex.properties.SaxsProperty
+        self : :class:`~idpflex.properties.SaxsProperty`
         """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 1))
         self.qvalues = contents[:, 0]
@@ -225,7 +225,7 @@ class SaxsLoaderMixin(object):
 
         Returns
         -------
-        self : :class:`~idpflex.properties.SaxsProperty
+        self : :class:`~idpflex.properties.SaxsProperty`
         """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 3))
         self.qvalues = contents[:, 0]
