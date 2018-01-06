@@ -250,7 +250,7 @@ class SaxsLoaderMixin(object):
             Suppress crysol standard output and error
         Returns
         -------
-        self : :class:`~idpflex.properties.SaxsProperty
+        self : :class:`~idpflex.properties.SaxsProperty`
         """
         # Write crysol file within a temporary directory
         curr_dir = os.getcwd()
@@ -294,7 +294,7 @@ class SaxsLoaderMixin(object):
 
         Returns
         -------
-        self : :class:`~idpflex.properties.SaxsProperty
+        self : :class:`~idpflex.properties.SaxsProperty`
         """
         contents = np.loadtxt(file_name, skiprows=0, usecols=(0, 1, 2))
         self.qvalues = contents[:, 0]
