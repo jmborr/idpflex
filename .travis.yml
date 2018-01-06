@@ -25,7 +25,9 @@ install:
         conda install --yes -n testenv flake8;
     fi
   - source activate testenv
-  - pip install future six h5py lmfit sphinx sphinx_rtd_theme matplotlib codecov
+  - pip install numpy --upgrade --ignore-installed
+  - pip install future six h5py lmfit MDAnalysis tqdm sphinx sphinx_rtd_theme matplotlib codecov
+
 
 script:
   - py.test --cov=idpflex idpflex tests

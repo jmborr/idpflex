@@ -1,8 +1,10 @@
 from __future__ import print_function, absolute_import
 
+import os
 from six.moves import zip
-# from pdb import set_trace as tr
-
+import subprocess
+import tempfile
+import fnmatch
 import functools
 import numpy as np
 import numbers
@@ -164,6 +166,10 @@ class SansLoaderMixin(object):
             item key where profiles are stored in the HDF5 file
         param index : int
             profile index, if data contains more than one profile
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
         """
         q = handle['qvectors'][:, 0]  # q values listed in the X component
         i = handle[profile_key][:, index][:, 0]  # profile
@@ -174,6 +180,7 @@ class SansLoaderMixin(object):
         self.qvalues = np.array(q, dtype=np.float)
         self.profile = np.array(i, dtype=np.float)
         self.errors = np.zeros(len(q), dtype=np.float)
+        return self
 
 
 class SansProperty(ProfileProperty, SansLoaderMixin):
@@ -197,11 +204,16 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty`
         """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 1))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
         self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
 
     def from_crysol_fit(self, file_name):
         r"""Load profile from a `crysol \*.fit <https://www.embl-hamburg.de/biosaxs/manuals/crysol.html#output>`_ file.
@@ -210,11 +222,61 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty`
         """  # noqa: E501
         contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 3))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
         self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
+
+    def from_crysol_pdb(self, file_name, command='crysol',
+                        args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
+                        silent=True):
+        r"""Calculate profile with crysol from a PDB file
+
+        Parameters
+        ----------
+        file_name : str
+            Path to PDB file
+        command : str
+            Command to invoke crysol
+        args : str
+            Arguments to pass to crysol
+        silent : bool
+            Suppress crysol standard output and error
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty`
+        """
+        # Write crysol file within a temporary directory
+        curr_dir = os.getcwd()
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        call_stack = [command] + args.split() + [file_name]
+        if silent:
+            FNULL = open(os.devnull, 'w')  # silence crysol output
+            subprocess.call(call_stack, stdout=FNULL, stderr=subprocess.STDOUT)
+        else:
+            subprocess.call(call_stack)
+        # Load the crysol file
+        ext_2_load = dict(int=self.from_crysol_int, fit=self.from_crysol_fit)
+        stop_search = False
+        for name in os.listdir(temp_dir):
+            for ext in ext_2_load:
+                if fnmatch.fnmatch(name, '*.{}'.format(ext)):
+                    ext_2_load[ext](name)
+                    stop_search = True
+                    break
+            if stop_search:
+                break
+        # Delete the temporary directory
+        os.chdir(curr_dir)
+        subprocess.call('/bin/rm -rf {}'.format(temp_dir).split())
+        return self
 
     def from_ascii(self, file_name):
         r"""Load profile from an ascii file.
@@ -229,11 +291,16 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SaxsProperty`
         """
         contents = np.loadtxt(file_name, skiprows=0, usecols=(0, 1, 2))
         self.qvalues = contents[:, 0]
         self.profile = contents[:, 1]
         self.errors = contents[:, 2]
+        return self
 
     def to_ascii(self, file_name):
         r"""Save profile as a three-column ascii file.
@@ -257,7 +324,7 @@ class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
             self.name = 'saxs'   # Default name
 
 
-def propagator_weighted_sum(values, node_tree,
+def propagator_weighted_sum(values, tree,
                             weights=lambda left_node, right_node: (1.0, 1.0)):
     r"""Calculate a property of each node as the sum of its siblings' property
     values. Propagation applies only to non-leaf nodes.
@@ -266,7 +333,7 @@ def propagator_weighted_sum(values, node_tree,
     ----------
     values: list
         List of property values (of same type), one item for each leaf node.
-    node_tree: :class:`~idpflex.cnextend.Tree`
+    tree: :class:`~idpflex.cnextend.Tree`
         Tree of :class:`~idpflex.cnextend.ClusterNodeX` nodes
     weights: tuple
         Callable of two arguments (left-node and right-node) returning
@@ -274,16 +341,16 @@ def propagator_weighted_sum(values, node_tree,
         always.
     """
     # Insert a property for each leaf
-    if len(values) != node_tree.nleafs:
+    if len(values) != tree.nleafs:
         msg = "len(values)={} but there are {} leafs".format(len(values),
-                                                             node_tree.nleafs)
+                                                             tree.nleafs)
         raise ValueError(msg)
-    for i, leaf in enumerate(node_tree.leafs):
+    for i, leaf in enumerate(tree.leafs):
         leaf.add_property(values[i])
     property_class = values[0].__class__  # type of the property
     name = values[0].name  # name of the property
     # Propagate up the tree nodes
-    for node in node_tree._nodes[node_tree.nleafs:]:
+    for node in tree._nodes[tree.nleafs:]:
         prop = property_class()
         prop.name = name
         left_prop = node.left[name]

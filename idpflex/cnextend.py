@@ -1,8 +1,11 @@
 from __future__ import print_function, absolute_import
 
 from scipy.cluster import hierarchy
+from scipy.spatial.distance import squareform
 import numpy as np
 from past.builtins import xrange
+
+from idpflex.distances import distance_submatrix
 
 
 class ClusterNodeX(hierarchy.ClusterNode):
@@ -16,6 +19,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
         # super(ClusterNodeX, self).__init__(*args, **kwargs)
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None
+        self._tree = None
         self._properties = dict()
 
     def __getitem__(self, name):
@@ -36,6 +40,16 @@ class ClusterNodeX(hierarchy.ClusterNode):
             return None
 
     @property
+    def tree(self):
+        r"""Tree object owning the node
+
+        Returns
+        -------
+        :class:`~idpflex.cnextend.Tree`
+        """
+        return self._tree
+
+    @property
     def leafs(self):
         r"""Find the leaf nodes under this cluster node.
 
@@ -46,6 +60,16 @@ class ClusterNodeX(hierarchy.ClusterNode):
         """
         return sorted(self.pre_order(lambda x: x), key=lambda x: x.id)
 
+    @property
+    def leaf_ids(self):
+        r"""ID's of the leafs under the tree, ordered by increasing ID.
+
+        Returns
+        -------
+        :class:`list`
+        """
+        return list(leaf.id for leaf in self.leafs)
+
     def add_property(self, a_property):
         r"""Insert or update a property in the set of properties
 
@@ -55,6 +79,61 @@ class ClusterNodeX(hierarchy.ClusterNode):
             a property instance
         """
         self._properties[a_property.name] = a_property
+
+    def distance_submatrix(self, dist_mat):
+        r"""Extract matrix of distances between leafs under the node.
+
+        Parameters
+        ----------
+        dist_mat: numpy.ndarray
+            Distance matrix NxN among all N leaves of the tree to which
+            the node belongs to. The row index of dist_mat should
+            correspond to the overall leaf index.
+
+        Returns
+        -------
+        :class:`~numpy:numpy.ndarray`
+            square distance matrix MxM between the M leafs under the node
+        """
+        return distance_submatrix(dist_mat, self.leaf_ids)
+
+    def representative(self, dist_mat, similarity=np.mean):
+        r"""Find leaf under node most similar to all leafs under node
+
+        Find the leaf that minimizes the similarity between itself and all
+        the leafs under the node. For instance, the average of all
+        distances between one leaf and all the other leafs results in
+        a similarity measure for the leaf.
+
+        Parameters
+        ----------
+        dist_mat: :class:`~numpy:numpy.ndarray`
+            condensed or square distance matrix MxM or NxN among all N leafs
+            in the tree or among all M leafs under the node.
+            If dealing with the distance matrix among all leaves in the
+            tree, self.distance_submatrix is first applied.
+        similarity: function object
+            reduction operation on a sequence of distances.
+
+        Returns
+        -------
+        :class:`~idpflex.cnextend.ClusterNodeX`
+            representative leaf node
+        """
+        if len(self.leafs) == 1:
+            return self
+        # Find out if matrix is condensed
+        square_dist_mat = dist_mat
+        if dist_mat.ndim == 1:
+            square_dist_mat = squareform(dist_mat)
+        # Find out if matrix for all leafs in the tree or all leafs in the node
+        if len(square_dist_mat) == len(self.leafs):
+            submatrix = square_dist_mat
+        elif len(square_dist_mat) == self.tree.nleafs:
+            submatrix = self.distance_submatrix(square_dist_mat)
+        else:
+            raise ValueError('Incorrect distance matrix size')
+        return self.leafs[similarity(submatrix, axis=0).argmin()]
 
 
 class Tree(object):
@@ -155,20 +234,21 @@ class Tree(object):
                                   'cluster is used before it is formed. See '
                                   'row %d, column 1') % fj)
             nd = node_class(i + n, left=d[fi], right=d[fj], dist=z[i, 2])
-            if hasattr(nd, 'parent'):
-                # True for ClusterNodeX objects
+            if hasattr(nd, 'parent'):  # True for ClusterNodeX objects
                 d[fi].parent = nd
                 d[fj].parent = nd
+            if hasattr(nd, '_tree'):  # True for ClusterNodeX objects
+                nd._tree = self
             if z[i, 3] != nd.count:
-                raise ValueError(('Corrupt matrix z. The count z[%d,3] is '
-                                  'incorrect.') % i)
+                message = 'Corrupt matrix z. The count z[{}, 3] is incorrect'
+                raise ValueError(message.format(i))
             d[n + i] = nd
         self.nleafs = n
         self.root = nd
         self._nodes = d
 
-    def clusters_above_depth(self, depth=0):
-        r"""Clusters nodes at or above depth from the root node
+    def nodes_above_depth(self, depth=0):
+        r"""Nodes at or above depth from the root node
 
         Parameters
         ----------
@@ -177,18 +257,18 @@ class Tree(object):
 
         Returns
         -------
-        list
+        :py:class:`list`
             List of nodes ordered by increasing ID. Last one is the root node
         """
-        clusters = [self.root, ]
+        nodes = [self.root, ]
         for d in range(1, 1+depth):
-            cmax = clusters[-d]
-            clusters.extend((cmax.left, cmax.right))
-            clusters.sort(key=lambda cluster: cluster.id)
-        return clusters
+            cmax = nodes[-d]
+            nodes.extend((cmax.left, cmax.right))
+            nodes.sort(key=lambda cluster: cluster.id)
+        return nodes
 
-    def clusters_at_depth(self, depth=0):
-        r"""Cluster nodes at a given depth from the root node
+    def nodes_at_depth(self, depth=0):
+        r"""Nodes at a given depth from the root node
 
         Parameters
         ----------
@@ -197,11 +277,11 @@ class Tree(object):
 
         Returns
         -------
-        clusters : list
+        :py:class:`list`
             List of nodes corresponding to that particular level
         """
         if depth == 0:
-            clusters = [self.root]
+            nodes = [self.root]
         else:
-            clusters = self.clusters_above_depth(depth)[:-depth]
-        return clusters
+            nodes = self.nodes_above_depth(depth)[:-depth]
+        return nodes

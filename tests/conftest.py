@@ -1,12 +1,15 @@
 from __future__ import print_function, absolute_import
 
-import h5py
-import numpy as np
 import os
-import pytest
 import sys
 from copy import deepcopy
+
+import pytest
+import h5py
+import numpy as np
 from scipy.cluster.hierarchy import linkage
+from scipy.spatial.distance import squareform
+import MDAnalysis as mda
 
 from idpflex import cnextend as cnx, properties as ps
 
@@ -33,22 +36,50 @@ class SimpleProperty(object):
         self.error_bar = 0.0
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
+def small_tree():
+    n_leafs = 9
+    a = np.arange(n_leafs)
+    dist_mat = squareform(np.square(a - a[:, np.newaxis]))
+    z = linkage(dist_mat, method='complete')
+    return {'dist_mat': dist_mat,
+            'z': z,
+            'tree': cnx.Tree(z),
+            'simple_property': [SimpleProperty(i) for i in range(n_leafs)],
+            }
+
+
+@pytest.fixture(scope='session')
 def benchmark():
-    Z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
-    return {'z': Z,
-            'tree': cnx.Tree(Z),
+    z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
+    return {'z': z,
+            'tree': cnx.Tree(z),
             'nnodes': 44757,
             'nleafs': 22379,
             'simple_property': [SimpleProperty(i) for i in range(22379)],
             }
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
+def trajectory_benchmark():
+    r"""Load a trajectory into an MDAnalysis Universe instance
+
+    Returns
+    -------
+    :class:`~MDAnalysis:MDAnalysis.core.universe.Universe`
+    """
+    sim_dir = os.path.join(data_dir, 'simulation')
+    u = mda.Universe(os.path.join(sim_dir, 'hiAPP.pdb'))
+    trajectory = os.path.join(sim_dir, 'hiAPP.xtc')
+    u.load_new(trajectory)
+    return u
+
+
+@pytest.fixture(scope='session')
 def saxs_benchmark():
     r"""Crysol output for one structure
 
-    Yields
+    Returns
     ------
     dict
         'crysol_file': absolute path to file.
@@ -58,7 +89,7 @@ def saxs_benchmark():
     return dict(crysol_file=crysol_file)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def sans_benchmark(request):
     r"""Sassena output containing 1000 I(Q) profiles for the hiAPP centroids.
 
@@ -96,7 +127,7 @@ def sans_benchmark(request):
                 tree_with_no_property=tree)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def sans_fit(sans_benchmark):
     r"""
 
@@ -123,7 +154,7 @@ def sans_fit(sans_benchmark):
     # particular depth
     depth = 6
     coeff = (0.45, 0.00, 0.00, 0.10, 0.25, 0.00, 0.20)  # they must add to one
-    clusters = tree.clusters_at_depth(depth)
+    clusters = tree.nodes_at_depth(depth)
     nclusters = 1 + depth  # depth=0 corresponds to the root node (nclusters=1)
     sans_property = clusters[0][name]
     profile = coeff[0] * sans_property.profile  # init with the first cluster
