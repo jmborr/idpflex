@@ -233,7 +233,7 @@ class SaxsLoaderMixin(object):
         self.errors = np.zeros(len(self.qvalues), dtype=float)
         return self
 
-    def from_crysol_pdb(self, file_name, exec='crysol',
+    def from_crysol_pdb(self, file_name, command='crysol',
                         args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
                         silent=True):
         r"""Calculate profile with crysol from a PDB file
@@ -242,7 +242,7 @@ class SaxsLoaderMixin(object):
         ----------
         file_name : str
             Path to PDB file
-        exec : str
+        command : str
             Command to invoke crysol
         args : str
             Arguments to pass to crysol
@@ -256,7 +256,7 @@ class SaxsLoaderMixin(object):
         curr_dir = os.getcwd()
         temp_dir = tempfile.mkdtemp()
         os.chdir(temp_dir)
-        call_stack = [exec] + args.split() + [file_name]
+        call_stack = [command] + args.split() + [file_name]
         if silent:
             FNULL = open(os.devnull, 'w')  # silence crysol output
             subprocess.call(call_stack, stdout=FNULL, stderr=subprocess.STDOUT)
