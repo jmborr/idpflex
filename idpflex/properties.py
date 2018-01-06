@@ -169,7 +169,7 @@ class SansLoaderMixin(object):
 
         Returns
         -------
-        self : :class:`~idpflex.properties.SansProperty
+        self : :class:`~idpflex.properties.SansProperty`
         """
         q = handle['qvectors'][:, 0]  # q values listed in the X component
         i = handle[profile_key][:, index][:, 0]  # profile
