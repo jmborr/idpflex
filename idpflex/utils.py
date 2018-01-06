@@ -47,9 +47,9 @@ def write_frame(a_universe, iframe, file_name):
     """
     a_universe.trajectory[iframe]
     # Create directory if not existing
-    dir = os.path.dirname(file_name)
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
+    dir_name = os.path.dirname(file_name)
+    if dir_name and not os.path.isdir(dir_name):
+        os.makedirs(dir_name)
 
     with mda.Writer(file_name) as writer:
         writer.write(a_universe)
