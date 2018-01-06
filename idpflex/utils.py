@@ -1,7 +1,5 @@
 import os
 import sys
-from contextlib import contextmanager
-import io
 
 from collections import namedtuple
 import MDAnalysis as mda
