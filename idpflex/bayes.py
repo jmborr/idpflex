@@ -116,6 +116,8 @@ def fit_to_depth(tree, experiment, property_name, max_depth=5):
             print('Fitting at depth = {}'.format(depth))
             mod = model_at_depth(tree, depth, property_name)
             params = mod.make_params()
-            fits_output.append(mod.fit(experiment.y, params=params,
-                                       x=experiment.x))
+            fits_output.append(mod.fit(experiment.y,
+                                       x=experiment.x,
+                                       weights=1.0 / experiment.e,
+                                       params=params))
         return fits_output
