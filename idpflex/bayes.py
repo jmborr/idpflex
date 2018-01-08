@@ -50,7 +50,7 @@ def model_at_node(node, property_name):
     :class:`~lmfit.model.CompositeModel`
         A model composed of a :class:`~qef.models.tabulatedfunction.TabulatedFunctionModel`
         and a :class:`~lmfit.models.ConstantModel`
-    """
+    """  # noqa: E501
     p = node[property_name]
     mod = TabulatedFunctionModel(p.x, p.y) + ConstantModel()
     mod.set_param_hint('center', vary=False)
@@ -74,7 +74,7 @@ def model_at_depth(tree, depth, property_name):
     c : :class:`~lmfit.model.CompositeModel`
         A model composed of a :class:`~qef.models.tabulatedfunction.TabulatedFunctionModel`
         for each node plus a :class:`~lmfit.models.ConstantModel`
-    """
+    """  # noqa: E501
     mod = ConstantModel()
     for node in tree.nodes_at_depth(depth):
         p = node[property_name]
