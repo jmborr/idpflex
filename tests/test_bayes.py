@@ -38,7 +38,7 @@ def test_fit_to_depth(sans_fit):
     p_exp = sans_fit['experiment_property']
     fits = bayes.fit_to_depth(tree, p_exp, name, max_depth=7)
     chi2 = np.asarray([fit.chisqr for fit in fits])
-    assert np.argmax(chi2 < 1) == sans_fit['depth']
+    assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
 
 if __name__ == '__main__':
