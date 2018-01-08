@@ -11,17 +11,17 @@ from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 import MDAnalysis as mda
 
-from idpflex import cnextend as cnx, properties as ps
+from idpflex import cnextend, properties as idprop
 
 # Resolve the path to the "external data"
 this_module_path = sys.modules[__name__].__file__
 data_dir = os.path.join(os.path.dirname(this_module_path), 'data')
 
 
-@ps.decorate_as_node_property((('name',       'name of the property'),
-                               ('domain_bar', 'property domain'),
-                               ('bar',        'property_value'),
-                               ('error_bar',  'property error')))
+@idprop.decorate_as_node_property((('name',       'name of the property'),
+                                  ('domain_bar', 'property domain'),
+                                  ('bar',        'property_value'),
+                                  ('error_bar',  'property error')))
 class SimpleProperty(object):
     """
     An integer property, only for testing purposes
@@ -44,7 +44,7 @@ def small_tree():
     z = linkage(dist_mat, method='complete')
     return {'dist_mat': dist_mat,
             'z': z,
-            'tree': cnx.Tree(z),
+            'tree': cnextend.Tree(z),
             'simple_property': [SimpleProperty(i) for i in range(n_leafs)],
             }
 
@@ -53,7 +53,7 @@ def small_tree():
 def benchmark():
     z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
     return {'z': z,
-            'tree': cnx.Tree(z),
+            'tree': cnextend.Tree(z),
             'nnodes': 44757,
             'nleafs': 22379,
             'simple_property': [SimpleProperty(i) for i in range(22379)],
@@ -110,13 +110,13 @@ def sans_benchmark(request):
     # Create a node tree.
     # m is a 1D compressed matrix of distances between leafs
     m = np.random.random(int(n_leafs * (n_leafs - 1) / 2))
-    Z = linkage(m)
-    tree = cnx.Tree(Z)
+    z = linkage(m)
+    tree = cnextend.Tree(z)
 
     # values is a list of SansProperty instances, one for each tree leaf
     values = list()
     for i in range(tree.nleafs):
-        sans_property = ps.SansProperty()
+        sans_property = idprop.SansProperty()
         sans_property.from_sassena(handle, index=i)
         values.append(sans_property)
 
@@ -133,44 +133,54 @@ def sans_fit(sans_benchmark):
 
     Parameters
     ----------
-    sans_benchmark : pytest fixture
+    sans_benchmark : :function:`~pytest.fixture`
 
     Returns
     -------
     dict
-        'tree': cnextend.Tree with random distances among leafs and endowed
-            with a property.
-        'experiment_property': SansProperty containing experimental profile
-        'property_name':
-        'depth': tree level giving the best fit to experiment
-        'coefficients': weight of each cluster at tree level 'depth' after
-            fitting.
+        A dictionary containing the following key, value pairs:
+    tree: :class:`~idpflex.cnextend.Tree`
+        A hiearchical tree with random distances among leafs, and endowed
+        with a :class:`~idpflex.properties.SansProperty`.
+    property_name: str
+        Just the name of the property
+    depth: int
+        Tree depth resulting in the best fit to experiment_property
+    coefficients: :py:`dict`
+        weights of each node at Tree depth resulting in best fit. (key, val)
+        pair is (node ID, weight).
+    background : float
+        Flat background added to the profile at depth for optimal fit
+    experiment_property: :class:`~idpflex.properties.SansProperty`
+        Experimental profile from a linear combination of the profiles
+        at depth for optimal fit using `coefficients` and `background`.
     """
     tree = deepcopy(sans_benchmark['tree_with_no_property'])
     values = sans_benchmark['property_list']
     name = values[0].name  # property name
-    ps.propagator_size_weighted_sum(values, tree)
+    idprop.propagator_size_weighted_sum(values, tree)
     # create a SANS profile as a linear combination of the clusters at a
     # particular depth
-    depth = 6
-    coeff = (0.45, 0.00, 0.00, 0.10, 0.25, 0.00, 0.20)  # they must add to one
-    clusters = tree.nodes_at_depth(depth)
-    nclusters = 1 + depth  # depth=0 corresponds to the root node (nclusters=1)
-    sans_property = clusters[0][name]
-    profile = coeff[0] * sans_property.profile  # init with the first cluster
-    flat_background = 0
-    for i in range(1, nclusters):
-        sans_property = clusters[i][name]
-        profile += coeff[i] * sans_property.profile
-        flat_background += np.mean(sans_property.profile)
-    flat_background /= nclusters
-    profile += flat_background  # add a flat background
-    experiment_property = ps.ProfileProperty(qvalues=sans_property.qvalues,
-                                             profile=profile,
-                                             errors=0.1*profile)
+    depth = 4
+    coeffs = (0.45, 0.00, 0.07, 0.25, 0.23)  # they must add to one
+    coefficients = dict()
+    nodes = tree.nodes_at_depth(depth)
+    n_nodes = 1 + depth  # depth=0 corresponds to the root node (nclusters=1)
+    q_values = (tree.root[name].x[:-1] + tree.root[name].x[1:]) / 2  # midpoint
+    profile = np.zeros(len(q_values))
+    for i in range(n_nodes):
+        coefficients[nodes[i].id] = coeffs[i]
+        p = nodes[i][name]
+        profile += coeffs[i] * (p.y[:-1] + p.y[1:]) / 2
+    background = 0.05 * max(profile)  # flat background
+    profile += background
+    experiment_property = idprop.SansProperty(name=name,
+                                              qvalues=q_values,
+                                              profile=profile,
+                                              errors=0.1*profile)
     return {'tree': tree,
             'property_name': name,
             'depth': depth,
-            'coefficients': coeff,
-            'background': flat_background,
+            'coefficients': coefficients,
+            'background': background,
             'experiment_property': experiment_property}
