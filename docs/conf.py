@@ -292,7 +292,8 @@ intersphinx_mapping = {
     'numpy': ('http://docs.scipy.org/doc/numpy', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'lmfit': ('https://lmfit.github.io/lmfit-py', None),
-    'MDAnalysis': ('https://www.mdanalysis.org/docs', None)
+    'MDAnalysis': ('https://www.mdanalysis.org/docs', None),
+    'pytest': ('https://docs.pytest.org/en/latest', None)
 }
 
 # Suppress certain warnings

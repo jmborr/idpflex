@@ -5,202 +5,117 @@ against an experimental profile.
 
 from __future__ import print_function, absolute_import
 
-import sys
+# from qef.models import TabulatedFunctionModel
+from lmfit.models import (Model, ConstantModel, index_of)
+from scipy.interpolate import interp1d
 
-try:
-    from mantid.simpleapi import (Fit, CreateWorkspace, TabulatedFunction,
-                                  CompositeFunctionWrapper, FlatBackground)
 
-    def model_at_node(node, property_name):
-        r"""Fit model as a Mantid Tabulated function with only Scaling
-        as free parameter, plus a flat background
+class TabulatedFunctionModel(Model):
 
-        Parameters
-        ----------
-        node : ClusterNodeX
-            Any node of a cnextend.Tree
-        property_name : str
-            name of the property to create the model for.
+    def __init__(self, xdata, ydata, interpolator_kind='linear',
+                 prefix='', missing=None, name=None,
+                 **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing})
+        self._interpolator = interp1d(xdata, ydata, kind=interpolator_kind)
 
-        Returns
-        -------
-        c : TabulatedFunction + background
-            Mantid fit function describing a model.
-        """
-        x = list(node[property_name].x)
-        y = list(node[property_name].y)
-        f = TabulatedFunction(X=x, Y=y)
-        f.fix('Shift')
-        f.fix('XScaling')
-        c = CompositeFunctionWrapper()
-        c += f
-        c += FlatBackground()
-        return c
+        def tabulate(x, amplitude, center):
+            return amplitude * self._interpolator(x - center)
 
-    def model_at_depth(tree, depth, property_name):
-        r"""Fit model as a linear combination of functions for each node of the
-        tree level.
+        super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
+        self.set_param_hint('amplitude', value=1)
+        self.set_param_hint('center', value=0)
 
-        Parameters
-        ----------
-        tree : cnextend.Tree
-            tree of nodes clustered by structural similarity and each node
-            containing a simulated property.
-        depth: int
-            depth level starting from the root level (depth=0)
-        property_name : str
-            name of the property to create the model for.
+    def guess(self, y, x=None, **kwargs):
+        amplitude = 1.0
+        center = 0.0
+        if x is not None:
+            center = x[index_of(y, max(y))]  # assumed peak within domain x
+            amplitude = max(y)
+        return self.make_params(amplitude=amplitude, center=center)
 
-        Returns
-        -------
-        c : CompositeFunction
-            Mantid fit function describing a model for the depth of the tree.
-        """
 
-        c = CompositeFunctionWrapper()
-        for node in tree.nodes_at_depth(depth):
-            x = list(node[property_name].x)
-            y = list(node[property_name].y)
-            f = TabulatedFunction(X=x, Y=y)
-            f['Scaling'] = 1.0/(1 + depth)
-            c += f
-        [c.fixAll(param) for param in ('Shift', 'XScaling')]
-        c.constrainAll('0<Scaling')
-        return c
+def model_at_node(node, property_name):
+    r"""Fit model as a tabulated function with a scaling parameter, plus a
+    flat background.
 
-    def do_fit(a_function, experiment, prefix='fit', run_fabada=False):
-        r"""Carries out fitting of a model against an experimental profile.
+    Parameters
+    ----------
+    node : :class:`~idpflex.cnextend.ClusterNodeX`
+        Any node of the hierarchical :class:`~idpflex.cnextend.Tree`
+    property_name : str
+        Name of the property to create the model for.
 
-        An initial quick fit using Levenberg-Marquardt minimizer is followed
-        by a longer minimization using the FABADA minimizer.
+    Returns
+    -------
+    :class:`~lmfit.model.CompositeModel`
+        A model composed of a :class:`~qef.models.tabulatedfunction.TabulatedFunctionModel`
+        and a :class:`~lmfit.models.ConstantModel`
+    """  # noqa: E501
+    p = node[property_name]
+    mod = TabulatedFunctionModel(p.x, p.y) + ConstantModel()
+    mod.set_param_hint('center', vary=False)
+    return mod
 
-        Parameters
-        ----------
-        a_function : FunctionWrapper
-            fit function model.
-        experiment : properties.NodeProperty
-            A property containing the experimental info.
-        prefix : str
-            prefix all output workspaces from the fit with this prefix string.
 
-        Returns
-        -------
-        fit_output: namedtuple
-            Output of Mantid's Fit algorithm
-        """
+def model_at_depth(tree, depth, property_name):
+    r"""Fit model for the nodes of the tree at a particular depth
 
-        # Create a workspace for the experiment
-        x = experiment.x
-        y = experiment.y
-        e = experiment.e
-        ws = CreateWorkspace(x, y, e, NSpec=1, UnitX='MomentumTransfer')
+    Parameters
+    ----------
+    tree : :class:`~idpflex.cnextend.Tree`
+        Hierarchical tree
+    depth: int
+        depth level, starting from the tree's root (depth=0)
+    property_name : str
+        Name of the property to create the model for
 
-        # Initialization of some variables
-        degrees_of_freedom = sum([not int(a_function.isFixed(i))
-                                  for i in range(a_function.nParams())])
-        # Initial quick minimization with Levenberg-Marquardt
-        minimizer = 'Levenberg-Marquardt'
-        fit_output = Fit(Function=a_function,
-                         InputWorkspace=ws,
-                         WorkspaceIndex=0,
-                         CreateOutput=True,
-                         Output=prefix,
-                         Minimizer=minimizer,
-                         MaxIterations=2000*degrees_of_freedom)
-        if run_fabada:
-            # Now run FABADA with previous minimization as initial guess
-            chain_length = 2500 * (1 + degrees_of_freedom)
-            minimizer = 'FABADA,Chains={}_chains,'.format(prefix) + \
-                        'ConvergedChain={}_convchains,'.format(prefix) + \
-                        'ChainLength={},'.format(chain_length) + \
-                        'NumberBinsPDF=50,ConvergenceCriteria=0.1'
-            # other_function = fit_output.Function
-            fit_output = Fit(Function=fit_output.Function,
-                             InputWorkspace=ws,
-                             WorkspaceIndex=0,
-                             CreateOutput=True,
-                             Output=prefix,
-                             Minimizer=minimizer,
-                             MaxIterations=2000*degrees_of_freedom)
+    Returns
+    -------
+    c : :class:`~lmfit.model.CompositeModel`
+        A model composed of a :class:`~qef.models.tabulatedfunction.TabulatedFunctionModel`
+        for each node plus a :class:`~lmfit.models.ConstantModel`
+    """  # noqa: E501
+    mod = ConstantModel()
+    for node in tree.nodes_at_depth(depth):
+        p = node[property_name]
+        m = TabulatedFunctionModel(p.x, p.y, prefix='n{}_'.format(node.id))
+        m.set_param_hint('center', vary=False)
+        m.set_param_hint('amplitude', value=1.0 / (1 + depth))
+        mod += m
+    return mod
 
-        return fit_output
 
-    def do_fit_at_depth_tree(tree, experiment, property_name, max_depth=10,
-                             background=FlatBackground()):
-        r"""Mantid fit for each level of a tree up to a maximum depth.
+def fit_to_depth(tree, experiment, property_name, max_depth=5):
+        r"""Fit at each tree depth from the root node up to a maximum depth.
+
+        Fit experiment against the property stored in the nodes. The model
+        is generated by :function:`~idpflex.bayes.model_at_depth`.
 
         Parameters
         ----------
-        tree : cnextend.Tree
-            Tree of nodes clustered by structural similarity and each node
-            containing a simulated property.
-        experiment : properties.NodeProperty
+        tree : :class:`~idpflex.cnextend.Tree`
+            Hierarchical tree
+        experiment : :class:`~idpflex.properties.ProfileProperty`
             A property containing the experimental info.
         property_name: str
             The name of the simulated property to compare against experiment.
         max_depth : int
-            Fit at each depth up to (but not including) max_depth.
-        background : FunctionWrapper
-            Mantid fit function describing the background
+            Fit at each depth up to (and including) max_depth.
 
         Returns
         -------
-        fits_output : list
-            Fit outputs at each level of the tree up to max_depth
+        fits_output : :py:class:`list`
+            A list of :class:`~lmfit.model.ModelResult` items containing the
+            fit at each level of the tree up to and including `max_depth`.
         """
 
         # Fit each level of the tree
         fits_output = list()
         # fits_prob = list()
-        for depth in range(max_depth):
+        for depth in range(max_depth + 1):
             print('Fitting at depth = {}'.format(depth))
-            model = model_at_depth(tree, depth, property_name)
-            model += background
-            fit_output = do_fit(model, experiment,
-                                prefix='fit{}'.format(depth))
-            fits_output.append(fit_output)
-
-            """
-            # Calculate probability of this level.
-            # Assumptions:
-            # 1 Model is tabulated functions plus flat background
-            # 2 Background is the last entry
-
-            # Extract the normalized variance-covariance matrix
-            table = fit_output.OutputNormalisedCovarianceMatrix
-            # The first column of the table contains parameter names.
-            # The last column and the last row relate to the flat background
-            # parameter.
-            n_row, n_cols = table.rowCount() - 1, table.columnCount() - 2
-            norm_var_cov = np.zeros(n_row * n_cols).reshape((n_row, n_cols))
-            for i_col in range(1, table.columnCount()-1):
-                norm_var_cov[:, i_col-1] = table.column(i_col)[:-1]
-            # mantid outputs the normalized covariance matrix such that the
-            # diagonal elements are 100.
-            norm_var_cov /= 100.0
-            # Extract the variances
-            errors = list()
-            param_table = fit_output.OutputParameters
-            for i_row in range(param_table.rowCount()):
-                if '.Scaling' in param_table.row(i_row)['Name']:
-                    errors.append(param_table.row(i_row)['Error'])
-            variances = np.array(errors) ** 2
-            # Compute the variance-covariance matrix
-            var_cov = norm_var_cov * \
-                      np.sqrt(variances * variances[np.newaxis].transpose())
-            # Compute the likelihood
-            likelihood = (4 * np.pi) ** depth *\
-            np.exp(0.5 * fit_output.OutputChi2overDoF) *\
-            np.sqrt(np.linalg.det(var_cov))
-            # Compute the prior probability
-            scaling = 0.0
-            for i_row in range(param_table.rowCount()):
-                if '.Scaling' in param_table.row(i_row)['Name']:
-                    scaling += param_table.row(i_row)['Value']
-            prior_prob = np.math.factorial(depth) / scaling ** depth
-            fits_prob.append(likelihood * prior_prob)
-            """
-        # return fits_output, fits_prob
+            mod = model_at_depth(tree, depth, property_name)
+            params = mod.make_params()
+            fits_output.append(mod.fit(experiment.y, params=params,
+                                       x=experiment.x))
         return fits_output
-except ImportError:
-    sys.stderr.write('Unable to import mantid')
