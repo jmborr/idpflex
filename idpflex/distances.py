@@ -52,7 +52,7 @@ def rmsd_matrix(xyz, condensed=False):
     for i in range(0, n-1):
         ri = xyz[i]
         for j in range(i+1, n):
-            rmsd[i][j] = find_rmsd(ri, xyz[j])
+            rmsd[i][j] = find_rmsd(ri, xyz[j], superposition=True)
             rmsd[j][i] = rmsd[i][j]
     if condensed is True:
         rmsd = squareform(rmsd)
