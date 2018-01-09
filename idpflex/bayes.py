@@ -22,7 +22,7 @@ class TabulatedFunctionModel(Model):
             return amplitude * self._interpolator(x - center)
 
         super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
-        self.set_param_hint('amplitude', value=1)
+        self.set_param_hint('amplitude', min=0, value=1)
         self.set_param_hint('center', value=0)
 
     def guess(self, y, x=None, **kwargs):

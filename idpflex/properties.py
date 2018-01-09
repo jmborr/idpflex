@@ -310,6 +310,9 @@ class SaxsLoaderMixin(object):
         | - *col2* profile
         | - *col3* errors of the profile
         """
+        dir_name = os.path.dirname(file_name)
+        if dir_name and not os.path.isdir(dir_name):
+            os.makedirs(dir_name)
         xye = np.array([list(self.x), list(self.y), list(self.e)])
         np.savetxt(file_name, xye.transpose(),
                    header='Momentum-transfer Profile Profile-errors')
