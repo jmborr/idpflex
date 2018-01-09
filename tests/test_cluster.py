@@ -11,9 +11,9 @@ def test_cluster_trajectory(trajectory_benchmark):
                                       selection='name CA',
                                       segment_length=100,
                                       n_representatives=4)
-    assert_almost_equal(results.rmsd[0:3], (5.4,  10.8,  11.0), decimal=0.1)
+    assert_almost_equal(results.rmsd[0:3], (5.4,  8.6,  9.0), decimal=0.1)
     leaf = results.tree.root.representative(results.rmsd)
-    assert leaf['iframe'].y == 454
+    assert leaf['iframe'].y == 345
 
 
 if __name__ == '__main__':

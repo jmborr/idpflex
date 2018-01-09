@@ -20,7 +20,7 @@ def test_rmsd_matrix(trajectory_benchmark):
     indexes = (0, 2, -1)  # first, third, and last frames
     xyz = idpd.extract_coordinates(trajectory_benchmark, group, indexes)
     rmsd = idpd.rmsd_matrix(xyz, condensed=True)
-    reference = np.array([10.96, 12.20, 9.63])
+    reference = np.array([8.73, 8.92, 8.57])
     assert_allclose(rmsd, reference, atol=0.01)
 
 
