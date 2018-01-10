@@ -2,7 +2,7 @@
 History
 =======
 
-0.1.0.1 (2018-01-10)
+0.1.0.2 (2018-01-10)
 --------------------
 
 * Integrate travis, github, and readthedocs
