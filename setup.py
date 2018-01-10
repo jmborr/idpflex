@@ -28,7 +28,7 @@ test_requirements = [
 
 setup(
     name='idpflex',
-    version='0.1.0',
+    version='0.1.0.0',
     description='Simulation-generated ensemble of structures for '
                 'Intrinsically Disordered Proteins',
     long_description=readme + '\n\n' + history,
