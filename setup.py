@@ -39,7 +39,7 @@ setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: Physics'
+        'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 2.7',
