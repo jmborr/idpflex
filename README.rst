@@ -13,4 +13,5 @@ idpflex
         :target: http://idpflex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-Analysis of intrinsically disordered proteins by comparing MD simulations to experiment
+Analysis of intrinsically disordered proteins by comparing MD simulations to
+Small Angle Scattering experiments.
