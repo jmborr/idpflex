@@ -1,6 +1,6 @@
-=========================================
-properties : Injection of node properties
-=========================================
+=====================================================
+properties : Injection of properties in a tree's node
+=====================================================
 
 .. automodule:: idpflex.properties
     :members:

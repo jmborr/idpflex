@@ -76,16 +76,18 @@ def register_as_node_property(cls, nxye):
     return cls
 
 
-def decorate_as_node_property(xye):
+def decorate_as_node_property(nxye):
     r"""Decorator that endows a class with the node property protocol
+
+    For details, see :func:`~idpflex.properties.register_as_node_property`
 
     Parameters
     ----------
-    xye : list
-        list of (name, description) pairs denoting the property items
+    nxye : list
+        list of (name, description) pairs denoting the property components
     """
     def decorate(cls):
-        return register_as_node_property(cls, xye)
+        return register_as_node_property(cls, nxye)
     return decorate
 
 
@@ -319,7 +321,7 @@ class SaxsLoaderMixin(object):
 
 
 class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
-    r"""Implementation of a node property for SANS data
+    r"""Implementation of a node property for SAXS data
     """
     def __init__(self, *args, **kwargs):
         ProfileProperty.__init__(self, *args, **kwargs)
@@ -329,8 +331,8 @@ class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
 
 def propagator_weighted_sum(values, tree,
                             weights=lambda left_node, right_node: (1.0, 1.0)):
-    r"""Calculate a property of each node as the sum of its siblings' property
-    values. Propagation applies only to non-leaf nodes.
+    r"""Calculate the property of a node as the sum of its two siblings'
+    property values. Propagation applies only to non-leaf nodes.
 
     Parameters
     ----------
@@ -388,6 +390,15 @@ def weights_by_size(left_node, right_node):
     return w, 1-w
 
 
+#: Calculate a property of the node as the sum of its siblings' property
+#:  values, weighted by the relative cluster sizes of the siblings.
+#:
+#: Parameters
+#: ----------
+#: values : list
+#:     List of property values (of same type), one item for each leaf node.
+#: node_tree : :class:`~idpflex.cnextend.Tree`
+#:     Tree of :class:`~idpflex.cnextend.ClusterNodeX` nodes
 propagator_size_weighted_sum = functools.partial(propagator_weighted_sum,
                                                  weights=weights_by_size)
 propagator_size_weighted_sum.__name__ = 'propagator_size_weighted_sum'

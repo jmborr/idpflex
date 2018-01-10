@@ -1,38 +1,52 @@
+from __future__ import print_function, absolute_import
+
 import sys
 
 from scipy.cluster import hierarchy
 from tqdm import tqdm
+from collections import namedtuple
 
-from idpflex.utils import returns_tuple
 from idpflex.distances import (rmsd_matrix, extract_coordinates)
 from idpflex.cnextend import Tree
 from idpflex.properties import ScalarProperty
 
-info = """Results from clustering
-idx : :class:`list`
-    Frame indexes for the representative structures (index begin at zero)
-rmsd : :class:`~numpy:numpy.ndarray`
-    RMDS matrix between representative structures
-tree : :class:`~idpflex.cnextend.Tree`
-    Clustering of representative structures. Leaf nodes contain property
-    `iframe` containing the frame index of the corresponding representative
-    structure.
-"""
-ClusterTrove = returns_tuple('ClusterTrove', 'idx rmsd tree',
-                             doc=info)
+
+class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
+    r"""A namedtuple with a `keys()` method for easy access of
+    fields, described below under header `Parameters`
+
+    Parameters
+    ----------
+    idx : :class:`list`
+        Frame indexes for the representative structures (indexes start at zero)
+    rmsd : :class:`~numpy:numpy.ndarray`
+        Root mean square devaition (RMDS) matrix between representative
+        structures.
+    tree : :class:`~idpflex.cnextend.Tree`
+        Clustering of representative structures. Leaf nodes contain property
+        `iframe` containing the frame index of the corresponding representative
+        structure.
+    """
+
+    def keys(self):
+        r"""Return the list of field names"""
+        return self._fields
 
 
 def cluster_trajectory(a_universe, selection='not name H*',
                        segment_length=1000, n_representatives=1000):
-    r"""Find frames indexes corresponding to representative structures.
+    r"""Cluster a set of representative structures
 
-    Simulation trajectory is divided into segments, and hierarchical
-    clustering is performed on each segment to yield a number of clusters.
+    The simulated trajectory is divided into segments, and hierarchical
+    clustering is performed on each segment to yield a limited number of
+    representative structures. These are then clustered into the final
+    hiearchical tree.
+
     Frame indexes from each segment are collected as cluster representatives.
 
     Parameters
     ----------
-    a_universe : :class:`~MDAnalysis.core.universe.Universe
+    a_universe : :class:`~MDAnalysis.core.universe.Universe`
         Topology and trajectory.
     selection : str
         atoms for which to calculate RMSD
@@ -45,7 +59,7 @@ def cluster_trajectory(a_universe, selection='not name H*',
     Returns
     -------
     :class:`~idpflex.cluster.ClusterTrove`
-        RMSD condensed matrix and hierarchical :class:`~idpflex.cnextend.Tree`
+        clustering results for the representatives
     """
     group = a_universe.select_atoms(selection)
 

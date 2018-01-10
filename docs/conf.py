@@ -111,6 +111,9 @@ exclude_patterns = ['_build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# some of the Python built-ins do no resolve correctly
+nitpick_ignore = [('py:class', 'list')]
+
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
