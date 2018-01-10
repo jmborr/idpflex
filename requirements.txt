@@ -1,0 +1,10 @@
+numpy
+scipy
+six
+h5py
+lmfit
+MDAnalysis
+tqdm
+sphinx
+sphinx_rtd_theme
+matplotlib
