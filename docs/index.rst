@@ -1,12 +1,11 @@
-Welcome to idpflex's documentation!
-======================================
+.. include:: ../README.rst
 
 Contents:
+---------
 
 .. toctree::
    :maxdepth: 1
 
-   readme
    installation
    usage
    idpflex
@@ -15,7 +14,7 @@ Contents:
    history
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
