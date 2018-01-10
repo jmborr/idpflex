@@ -6,19 +6,19 @@ from MDAnalysis.analysis.rms import rmsd as find_rmsd
 
 
 def extract_coordinates(a_universe, group, indexes=None):
-    r"""XYZ coordinates for an atom selection for a subset of frames
+    r"""Obtain XYZ coordinates for an atom group and for a subset of frames
 
     Parameters
     ----------
-    a_universe :  MDAnalysis.core.universe.Universe
+    a_universe :  :class:`~MDAnalysis.core.universe.Universe`
         Topology and trajectory.
-    group : MDAnalysis.core.groups.AtomGroup
+    group : :class:`~MDAnalysis.core.groups.AtomGroup`
         Atom selection.
-    indexes: sequence of int
+    indexes: :py:class:`list`
         sequence of frame indexes
     Returns
     -------
-    numpy.ndarray
+    :class:`~numpy:numpy.ndarray`
         XYZ coordinates shape=(M, N, 3) with M number of indexes and
         N number of atoms in group.
     """
@@ -44,7 +44,7 @@ def rmsd_matrix(xyz, condensed=False):
     Returns
     -------
     :class:`~numpy:numpy.ndarray`
-        Square NxN or 1d N*(N+1)/2 RMSD matrix
+        Square NxN matrix, or condensed N*(N+1)/2 matrix
     """
     n = len(xyz)
     rmsd = np.zeros(n * n).reshape(n, n)

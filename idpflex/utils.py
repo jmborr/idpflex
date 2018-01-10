@@ -1,42 +1,17 @@
-import os
-import sys
+from __future__ import print_function, absolute_import
 
-from collections import namedtuple
+import os
 import MDAnalysis as mda
 
 
-def returns_tuple(typename, field_names, doc=None):
-    """A namedtuple with a docstring and a `keys()` method for easy access of
-    fields. `keys()` returns a list instance.
-
-    Parameters
-    ----------
-    typename : str
-        name of the generated namedtuple class
-    field_names: str
-        arguments of the tuple
-    doc: str
-        docstring for the namedtuple class
-
-    Returns
-    -------
-    namedtuple
-    """
-    nt = namedtuple(typename, field_names)
-    if doc is not None and sys.version_info[0] >= 3:
-        nt.__doc__ = doc + '\n' + nt.__doc__
-    nt.keys = lambda self: self._fields
-    return nt
-
-
 def write_frame(a_universe, iframe, file_name):
-    r"""Write a one trajectory frame to file.
+    r"""Write a single trajectory frame to file.
 
     Format is guessed from the file's extension.
 
     Parameters
     ----------
-    a_universe : :class:`~MDAnalysis.core.universe.Universe
+    a_universe : :class:`~MDAnalysis.core.universe.Universe`
         Universe describing the simulation
     iframe : int
         Trajectory frame index (indexes begin with zero)

@@ -55,7 +55,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
 
         Returns
         -------
-        :class:`list`
+        :py:class:`list`
             node leafs ordered by increasing ID
         """
         return sorted(self.pre_order(lambda x: x), key=lambda x: x.id)
@@ -86,9 +86,9 @@ class ClusterNodeX(hierarchy.ClusterNode):
         Parameters
         ----------
         dist_mat: numpy.ndarray
-            Distance matrix NxN among all N leaves of the tree to which
-            the node belongs to. The row index of dist_mat should
-            correspond to the overall leaf index.
+            Distance matrix (square or in condensed form) among all N leaves
+            of the tree to which the node belongs to. The row indexes of
+            `dist_mat` must correspond to the node IDs of the leaves.
 
         Returns
         -------
@@ -98,22 +98,24 @@ class ClusterNodeX(hierarchy.ClusterNode):
         return distance_submatrix(dist_mat, self.leaf_ids)
 
     def representative(self, dist_mat, similarity=np.mean):
-        r"""Find leaf under node most similar to all leafs under node
+        r"""Find leaf under node that is most similar to all other leaves
+        under the node
 
         Find the leaf that minimizes the similarity between itself and all
-        the leafs under the node. For instance, the average of all
-        distances between one leaf and all the other leafs results in
-        a similarity measure for the leaf.
+        the other leaves under the node. For instance, the average of all
+        distances between one leaf and all the other leaves results in
+        a similarity scalar for the leaf.
 
         Parameters
         ----------
         dist_mat: :class:`~numpy:numpy.ndarray`
-            condensed or square distance matrix MxM or NxN among all N leafs
-            in the tree or among all M leafs under the node.
+            condensed or square distance matrix MxM or NxN among all N leaves
+            in the tree or among all M leaves under the node.
             If dealing with the distance matrix among all leaves in the
             tree, self.distance_submatrix is first applied.
         similarity: function object
-            reduction operation on a sequence of distances.
+            reduction operation on a the list of distances between one leaf
+            and the other (M-1) leaves.
 
         Returns
         -------
