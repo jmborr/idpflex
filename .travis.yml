@@ -38,20 +38,6 @@ script:
         sphinx-build -nWT -b html docs docs/_build/html;
     fi
 
-# Deploying in pypi
-# https://docs.travis-ci.com/user/deployment/pypi
-# https://docs.travis-ci.com/user/encryption-keys
-deploy:
-  provider: pypi
-  user: "jose.borreguero"
-  password:
-    secure: "ZFm/5fuIrjsdyKVv9v8/giGvA6lSNzOehJdSqdClOBPyNqMnbon3MfAYUZSAnle6iLGw24cxJaSXq3TQrEqYobA8QyZ4o6eXVhpo9HHPpaJrCC6CGIx2u+9TTyWNa8INnRLee2zXTX7h2gkSQINMazoCk2gXIFBsbm0b5EenhwCdTWHLjaMQJYgMbYQFFNbtn0t9keptmlxfBF1pMEYv2F4hLOD4E49/xR0yJF4J5cDJsGAIDF72BWU5kSrjnpX7cqJVnsL7cEEZbOTksWskqgxWPwN51yzByAIzslLsbkPJbFzrNew6XmUhJAbRKVxy+pSrsLWUoENzUJgAzYrsPltn4FZBCh5woJ4ouwPX9FY5MedcjCyyvqsx1q/5bvvEdEzOWS5xRxeGuwECkkzA8Y1s8/91ELOcAml5vLuKQTFbMvPqyG94qjwkstUPZbJUjgLquNp1ACf6sDg+S7HTaDj1CCik0eB5KO9OjuT/kH4nlwIEf6aUlEbYPJQ1TVYnszCIJ73VsjAK0ibxNhhmJCTsHjLT3jZRhPvq8VxkHO5GDDBAAJyh8eTH+vUZbQGQ3nSfLUEPrGAOK2U1E8pB0tWZbXtkI2XM9BH0+sKi5NP6sK+d4Uv4f4dfa3qIEWsHQ5PCsCyNcpxYmGDAAB0Ky8RqnJG1nave7m/4WWs1WKc="
-  on:
-    tags: true
-
-after_success:
-  - codecov
-
 notifications:
   - on_success: never
   - on_failure: never
