@@ -25,7 +25,7 @@ test_requirements = [
 
 setup(
     name='idpflex',
-    version='0.1.0.2',
+    version='0.1.1.1',
     long_description=readme,
     author="Jose Borreguero",
     author_email='borreguero@gmail.com',
@@ -37,7 +37,7 @@ setup(
     zip_safe=False,
     keywords='idpflex',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: MIT License',
