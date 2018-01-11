@@ -90,7 +90,7 @@ def rmsd_matrix(xyz, condensed=False):
     random.shuffle(indexes)  # to balance load among cores
     n_cores = multiprocessing.cpu_count()
     m = int(n / n_cores)  # number of rows per core
-    # Each chunk of rows is assigned to one core
+    # One chunk of rows is assigned to one core
     i_chunks = [indexes[i*m: (i+1)*m] for i in range(n_cores)]
     # left over rows assigned to last chunk
     i_chunks[-1].extend(indexes[m * n_cores:])
@@ -102,10 +102,6 @@ def rmsd_matrix(xyz, condensed=False):
             for k, i in enumerate(i_chunk):
                 rmsd[i][i+1:] = dists[k]
         pool.terminate()
-    #with multiprocessing.Pool(processes=n_cores) as pool:
-    #    for i_chunk, dists in pool.imap_unordered(rr, i_chunks):
-    #        for k, i in enumerate(i_chunk):
-    #            rmsd[i][i+1:] = dists[k]
     rmsd += rmsd.transpose()
 
     if condensed is True:
