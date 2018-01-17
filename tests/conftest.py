@@ -59,6 +59,7 @@ def benchmark():
             'simple_property': [SimpleProperty(i) for i in range(22379)],
             }
 
+
 @pytest.fixture(scope='session')
 def ss_benchmark():
     r"""DSSP output
@@ -69,7 +70,9 @@ def ss_benchmark():
         'dssp_file': absolute path to file.
     """
     name = os.path.join(data_dir, 'simulation', 'hiAPP.dssp')
-    return dict(dssp_file=name)
+    return dict(dssp_file=os.path.join(data_dir, 'simulation', 'hiAPP.dssp'),
+                pdb_file=os.path.join(data_dir, 'simulation', 'hiAPP.pdb'))
+
 
 @pytest.fixture(scope='session')
 def trajectory_benchmark():

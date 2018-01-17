@@ -224,7 +224,7 @@ class SecondaryStructureProperty(object):
         self.errors = np.zeros(self.profile.shape)
         return self
 
-    def from_pdb(self, file_name, command='mkdssp', silent=True):
+    def from_dssp_pdb(self, file_name, command='mkdssp', silent=True):
         r"""Calculate secondary structure with DSSP
 
         Parameters
