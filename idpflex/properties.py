@@ -197,6 +197,29 @@ class SecondaryStructureProperty(object):
         self.profile = profile
         self.errors = errors
 
+    def from_dssp_sequence(self, codes):
+        r"""Load secondary structure profile from a single string of DSSP codes
+
+        Attributes *aa* and *errors* not modified.
+
+        Parameters
+        ----------
+        codes : str
+            Sequence of one-letter DSSP codes
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SecondaryStructureProperty`
+
+        """
+        if self.aa is not None and len(self.aa) != len(codes):
+            raise ValueError('length of {} different than that of the '
+                             'amino acid sequence'.format(codes))
+        if self.errors is not None and len(self.errors) != len(codes):
+            raise ValueError('length of {} different than that of the '
+                             'profile errors'.format(codes))
+        self.profile = np.asarray([self.code2profile(c) for c in codes])
+        return self
+
     def from_dssp(self, file_name):
         r"""Load secondary structure profile from a `dssp file <http://swift.cmbi.ru.nl/gv/dssp/>`_
 

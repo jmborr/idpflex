@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 
+import random
 import numpy as np
 import pytest
 
@@ -78,6 +79,11 @@ class TestSecondaryStructureProperty(object):
         ss_prop = SSP()
         assert ss_prop.name == 'ss'
 
+    def test_from_dssp_sequence(self):
+        seq = ''.join(random.sample(SSP.dssp_codes, SSP.n_codes))
+        ss_prop = SSP().from_dssp_sequence(seq)
+        np.testing.assert_array_equal(ss_prop.y[-1], SSP.code2profile(seq[-1]))
+
     def test_from_dssp(self, ss_benchmark):
         name = ss_benchmark['dssp_file']
         ss_prop = SSP().from_dssp(name)
@@ -87,6 +93,24 @@ class TestSecondaryStructureProperty(object):
         name = ss_benchmark['pdb_file']
         ss_prop = SSP().from_dssp_pdb(name)
         np.testing.assert_array_equal(ss_prop.y[-1], SSP.code2profile(' '))
+
+    def test_propagator_size_weighted_sum(self, small_tree):
+        r"""Create random secondary sequences by shufling all codes and
+        assign to the leafs of the tree. Then, propagate the profiles up
+        the tree hiearchy. Finally, compare the profile of the root with
+        expected profile.
+        """
+        tree = small_tree['tree']
+        ss_props = list()
+        for i in range(tree.nleafs):
+            seq = ''.join(random.sample(SSP.dssp_codes, SSP.n_codes))
+            ss_props.append(SSP().from_dssp_sequence(seq))
+        ps.propagator_size_weighted_sum(ss_props, tree)
+        # Manually calculate the average profile for the last residue
+        y = np.asarray([ss_props[i].y for i in range(tree.nleafs)])
+        average_profile = np.mean(y, axis=0)
+        np.testing.assert_array_almost_equal(average_profile,
+                                             tree.root['ss'].y, decimal=12)
 
 
 class TestProfileProperty(object):
