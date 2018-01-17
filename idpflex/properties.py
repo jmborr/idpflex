@@ -281,6 +281,10 @@ class SecondaryStructureProperty(object):
         return self
 
 
+@decorate_as_node_property((('name', '(str) name of the profile'),
+                            ('qvalues', '(:class:`~numpy:numpy.ndarray`) momentum transfer values'),  # noqa: E501
+                            ('profile', '(:class:`~numpy:numpy.ndarray`) profile intensities'),  # noqa: E501
+                            ('errors', '(:class:`~numpy:numpy.ndarray`) intensity errors')))  # noqa: E501
 class ProfileProperty(object):
     r"""Implementation of a node property valid for SANS or X-Ray data.
 
