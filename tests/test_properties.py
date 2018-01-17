@@ -89,6 +89,7 @@ class TestSecondaryStructureProperty(object):
         ss_prop = SSP().from_dssp(name)
         np.testing.assert_array_equal(ss_prop.y[-1], SSP.code2profile(' '))
 
+    @pytest.mark.skip(reason="DSSP may not be installed in the machine")
     def test_from_dssp_pdb(self, ss_benchmark):
         name = ss_benchmark['pdb_file']
         ss_prop = SSP().from_dssp_pdb(name)
