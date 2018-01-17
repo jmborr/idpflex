@@ -124,9 +124,140 @@ class ScalarProperty(object):
 
 
 @decorate_as_node_property((('name', '(str) name of the profile'),
-                            ('qvalues', '(:class:`~numpy:numpy.ndarray`) momentum transfer values'),  # noqa: E501
-                            ('profile', '(:class:`~numpy:numpy.ndarray`) profile intensities'),  # noqa: E501
-                            ('errors', '(:class:`~numpy:numpy.ndarray`) intensity errors')))  # noqa: E501
+                            ('aa', '(:py:class:`str`) amino-acid sequence'),  # noqa: E501
+                            ('profile', '(:class:`~numpy:numpy.ndarray`) secondary structure assignment'),  # noqa: E501
+                            ('errors', '(:class:`~numpy:numpy.ndarray`) assignment undeterminacy')))  # noqa: E501
+class SecondaryStructureProperty(object):
+    r"""Node property for secondary structure determined by dssp
+
+    Every residue is assigned a vector of length 8. Indexes corresponds to
+    different secondary structure assignment:
+
+    +-------+------+-----------------------------+
+    | Index | DSSP |           Structure         |
+    |       | code |                             |
+    +=======+======+=============================+
+    |   0   |   H  |Alpha helix (4-12)           |
+    |   1   |   B  |Isolated beta-bridge residue |
+    |   2   |   E  |Strand                       |
+    |   3   |   G  |3-10 helix                   |
+    |   4   |   I  |Pi helix                     |
+    |   5   |   T  |Turn                         |
+    |   6   |   S  |Bend                         |
+    |   7   |      |Unstructured (coil)          |
+    +-------+------+-----------------------------+
+
+    We follow here `Bio.PDB.DSSP ordering <http://biopython.org/DIST/docs/api/Bio.PDB.DSSP%27-module.html>`_
+
+    For a leaf node (single structure), the vector for any given residue will
+    be all zeroes except a value of one for the corresponding assigned
+    secondary structure. For all other nodes, the vector will correspond to
+    a probability distribution among the different DSSP codes.
+
+    Parameters
+    ----------
+    name : str
+        Property name
+    aa : str
+        One-letter amino acid sequence encoded in a single string
+    profile : :class:`~numpy:numpy.ndarray`
+        N x 8 matrix with N number of residues and 8 types of secondary
+        structure
+    errors : :class:`~numpy:numpy.ndarray`
+        N x 8 matrix denoting undeterminacies for each type of assigned
+        secondary residue in every residue
+    """
+    dssp_codes = 'HBEGITS '
+    n_codes = len(dssp_codes)
+
+    @classmethod
+    def code2profile(cls, code):
+        r"""Generate a secondary structure profile vector for a
+        particular DSSP code
+
+        Parameters
+        ----------
+        code : str
+            one-letter code denoting secondary structure assignment
+
+        Returns
+        -------
+        :class:`~numpy:numpy.ndarray`
+            profile vector
+        """
+        if code not in cls.dssp_codes:
+            raise  ValueError('{} is not a valid DSSP code'.format(code))
+        v = np.zeros(cls.n_codes)
+        v[cls.dssp_codes.find(code)] = 1.0
+        return v
+
+    def __init__(self, name='ss', aa=None, profile=None, errors=None):
+        self.name = name
+        self.aa = aa
+        self.profile = profile
+        self.errors = errors
+
+    def from_dssp(self, file_name):
+        r"""Load secondary structure profile from a `dssp file <http://swift.cmbi.ru.nl/gv/dssp/>`_
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SecondaryStructureProperty`
+        """  # noqa: E501
+        aa = ''
+        profile = list()
+        start = False
+        with open(file_name) as handle:
+            for line in handle:
+                if '#' in line:
+                    start = True
+                if start:
+                    aa += line[13:14]
+                    profile .append(self.code2profile(line[16:17]))
+        self.aa = aa
+        self.profile = np.asarray(profile)
+        self.errors = np.zeros(self.profile.shape)
+        return self
+
+    def from_pdb(self, file_name, command='mkdssp', silent=True):
+        r"""Calculate secondary structure with DSSP
+
+        Parameters
+        ----------
+        file_name : str
+            Path to PDB file
+        command : str
+            Command to invoke dssp. You need to have DSSP installed in your
+            machine
+        silent : bool
+            Suppress DSSP standard output and error
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SecondaryStructureProperty`
+        """
+        # Generate a temporary DSSP file
+        curr_dir = os.getcwd()
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        call_stack = [command, '-i', file_name, '-o', 'pdb.dssp']
+        if silent:
+            FNULL = open(os.devnull, 'w')  # silence crysol output
+            subprocess.call(call_stack, stdout=FNULL, stderr=subprocess.STDOUT)
+        else:
+            subprocess.call(call_stack)
+        # load the DSSP file
+        self.from_dssp('pdb.dssp')
+        # Delete the temporary directory
+        os.chdir(curr_dir)
+        subprocess.call('/bin/rm -rf {}'.format(temp_dir).split())
+        return self
+
+
 class ProfileProperty(object):
     r"""Implementation of a node property valid for SANS or X-Ray data.
 

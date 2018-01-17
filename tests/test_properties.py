@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from idpflex import properties as ps
+from idpflex.properties import SecondaryStructureProperty as SSP
 
 
 class TestRegisterDecorateProperties(object):
@@ -52,6 +53,35 @@ class TestRegisterDecorateProperties(object):
         assert some_prop.x == 'ax'
         assert some_prop.y == 'by'
         assert some_prop.e == 'ce'
+
+
+class TestSecondaryStructureProperty(object):
+
+    def test_class_decorated_as_node_property(self):
+        assert isinstance(SSP.name, property)
+        assert isinstance(SSP.x, property)
+        assert isinstance(SSP.y, property)
+        assert isinstance(SSP.e, property)
+
+    def test_instance_decorated_as_node_property(self):
+        ss = 'GTEL'
+        v = np.random.rand(len(ss), SSP.n_codes)
+        v /= np.sum(v, axis=1)[:, np.newaxis]  # normalize rows
+        profile_prop = SSP(name='foo', aa=ss,
+                                                     profile=v, errors=0.1*v)
+        assert profile_prop.name == 'foo'
+        assert np.array_equal(profile_prop.x, ss)
+        assert np.array_equal(profile_prop.y, v)
+        assert np.array_equal(profile_prop.e, 0.1*v)
+
+    def test_default_name(self):
+        ss_prop = SSP()
+        assert ss_prop.name == 'ss'
+
+    def test_from_dssp(self, ss_benchmark):
+        name = ss_benchmark['dssp_file']
+        ss_prop = SSP().from_dssp(name)
+        np.testing.assert_array_equal(ss_prop.y[-1], SSP.code2profile(' '))
 
 
 class TestProfileProperty(object):
