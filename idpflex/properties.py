@@ -166,7 +166,7 @@ class SecondaryStructureProperty(object):
     errors : :class:`~numpy:numpy.ndarray`
         N x 8 matrix denoting undeterminacies for each type of assigned
         secondary residue in every residue
-    """
+    """  # noqa: E501
     dssp_codes = 'HBEGITS '
     n_codes = len(dssp_codes)
 
@@ -186,7 +186,7 @@ class SecondaryStructureProperty(object):
             profile vector
         """
         if code not in cls.dssp_codes:
-            raise  ValueError('{} is not a valid DSSP code'.format(code))
+            raise ValueError('{} is not a valid DSSP code'.format(code))
         v = np.zeros(cls.n_codes)
         v[cls.dssp_codes.find(code)] = 1.0
         return v

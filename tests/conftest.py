@@ -69,7 +69,6 @@ def ss_benchmark():
     dict
         'dssp_file': absolute path to file.
     """
-    name = os.path.join(data_dir, 'simulation', 'hiAPP.dssp')
     return dict(dssp_file=os.path.join(data_dir, 'simulation', 'hiAPP.dssp'),
                 pdb_file=os.path.join(data_dir, 'simulation', 'hiAPP.pdb'))
 

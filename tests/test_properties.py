@@ -68,8 +68,7 @@ class TestSecondaryStructureProperty(object):
         ss = 'GTEL'
         v = np.random.rand(len(ss), SSP.n_codes)
         v /= np.sum(v, axis=1)[:, np.newaxis]  # normalize rows
-        profile_prop = SSP(name='foo', aa=ss,
-                                                     profile=v, errors=0.1*v)
+        profile_prop = SSP(name='foo', aa=ss, profile=v, errors=0.1*v)
         assert profile_prop.name == 'foo'
         assert np.array_equal(profile_prop.x, ss)
         assert np.array_equal(profile_prop.y, v)
