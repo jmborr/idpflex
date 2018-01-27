@@ -13,6 +13,11 @@ Contents:
    authors
    history
 
+Contact
+-------
+
+Post your questions and comments on the `gitter lobby <https://gitter.im/idpflex/Lobby>`_
+
 Indices and tables
 ------------------
 
