@@ -13,10 +13,9 @@ idpflex
         :target: http://idpflex.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-Analysis of intrinsically disordered proteins by comparing MD simulations to
-Small Angle Scattering experiments.
-
-
 .. image:: https://badges.gitter.im/idpflex/Lobby.svg
    :alt: Join the chat at https://gitter.im/idpflex/Lobby
    :target: https://gitter.im/idpflex/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
+Analysis of intrinsically disordered proteins by comparing MD simulations to
+Small Angle Scattering experiments.
