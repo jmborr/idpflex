@@ -133,18 +133,21 @@ class TestSecondaryStructureProperty(object):
         assert pr.disparity(SSP(profile=-p)) == 4 * \
             pr.disparity(SSP(profile=o))
 
+    @pytest.mark.skip(reason="Plotting not enabled in the CI")
     def test_plot_percents(self):
         profile = np.random.rand(42, SSP.n_codes)  # not normalized
         profile /= np.sum(profile, axis=1)[:, np.newaxis]  # normalized
         prop = SSP(profile=profile)
         prop.plot('percents')
 
+    @pytest.mark.skip(reason="Plotting not enabled in the CI")
     def test_plot_node(self):
         profile = np.random.rand(42, SSP.n_codes)  # not normalized
         profile /= np.sum(profile, axis=1)[:, np.newaxis]  # normalized
         prop = SSP(profile=profile)
         prop.plot('node')
 
+    @pytest.mark.skip(reason="Plotting not enabled in the CI")
     def test_plot_leafs(self, small_tree):
         tree = small_tree['tree']
         ss_props = list()
