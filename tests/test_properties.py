@@ -126,12 +126,12 @@ class TestSecondaryStructureProperty(object):
         c = prop.collapsed
         assert c[0] == np.argmax(profile[0])
 
-    def test_similarity(self):
+    def test_disparity(self):
         p = np.random.rand(42, SSP.n_codes)  # not normalized
         o = np.zeros((42, SSP.n_codes))
         pr = SSP(profile=p)
-        assert pr.similarity(SSP(profile=-p)) == 4 * \
-            pr.similarity(SSP(profile=o))
+        assert pr.disparity(SSP(profile=-p)) == 4 * \
+            pr.disparity(SSP(profile=o))
 
     def test_plot_percents(self):
         profile = np.random.rand(42, SSP.n_codes)  # not normalized
