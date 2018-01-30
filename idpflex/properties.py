@@ -8,6 +8,9 @@ import fnmatch
 import functools
 import numpy as np
 import numbers
+from collections import OrderedDict
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
 
 
 def register_as_node_property(cls, nxye):
@@ -116,6 +119,7 @@ class ScalarProperty(object):
         self.x = x
         self.e = e
         self.y = y
+        self.node = None
 
     def set_scalar(self, y):
         if not isinstance(y, numbers.Real):
@@ -133,19 +137,16 @@ class SecondaryStructureProperty(object):
     Every residue is assigned a vector of length 8. Indexes corresponds to
     different secondary structure assignment:
 
-    +-------+------+-----------------------------+
-    | Index | DSSP |           Structure         |
-    |       | code |                             |
-    +=======+======+=============================+
-    |   0   |   H  |Alpha helix (4-12)           |
-    |   1   |   B  |Isolated beta-bridge residue |
-    |   2   |   E  |Strand                       |
-    |   3   |   G  |3-10 helix                   |
-    |   4   |   I  |Pi helix                     |
-    |   5   |   T  |Turn                         |
-    |   6   |   S  |Bend                         |
-    |   7   |      |Unstructured (coil)          |
-    +-------+------+-----------------------------+
+    | Index__||__DSSP code__||__ Color__||__Structure__||
+    | =======================================
+    | __0__||__H__||__yellow__||__Alpha helix (4-12)
+    | __1__||__B__||__pink__||__Isolated beta-bridge residue
+    | __2__||__E__||__red__||__Strand
+    | __3__||__G__||__orange__||__3-10 helix
+    | __4__||__I___||__green__||__Pi helix
+    | __5__||__T__||__magenta__||__Turn
+    | __6__||__S__||__cyan__||__Bend
+    | __7__||_____||__white__||__Unstructured (coil)
 
     We follow here `Bio.PDB.DSSP ordering <http://biopython.org/DIST/docs/api/Bio.PDB.DSSP%27-module.html>`_
 
@@ -167,8 +168,19 @@ class SecondaryStructureProperty(object):
         N x 8 matrix denoting undeterminacies for each type of assigned
         secondary residue in every residue
     """  # noqa: E501
-    dssp_codes = 'HBEGITS '
+    #: Description of single-letter codes for secondary structure
+    elements = OrderedDict([('H', 'Alpha helix'), ('B', 'Isolated beta-bridge'),
+                            ('E', 'Strand'), ('G', '3-10 helix'),
+                            ('I', 'Pi helix'), ('T', 'Turn'),
+                            ('S', 'Bend'), (' ', 'Unstructured')])
+    #: list of single-letter codes for secondary structure. Last code is a
+    #: blank space denoting no secondary structure (Unstructured)
+    dssp_codes = ''.join(elements.keys())
+    #: number of distinctive elements of secondary structure
     n_codes = len(dssp_codes)
+    #: associated colors to each element of secondary structure
+    colors = ('yellow', 'pink', 'red', 'orange', 'green', 'magenta', 'cyan',
+              'white')
 
     @classmethod
     def code2profile(cls, code):
@@ -196,11 +208,12 @@ class SecondaryStructureProperty(object):
         self.aa = aa
         self.profile = profile
         self.errors = errors
+        self.node = None
 
     def from_dssp_sequence(self, codes):
         r"""Load secondary structure profile from a single string of DSSP codes
 
-        Attributes *aa* and *errors* not modified.
+        Attributes *aa* and *errors* are not modified, only **profile**.
 
         Parameters
         ----------
@@ -280,6 +293,120 @@ class SecondaryStructureProperty(object):
         subprocess.call('/bin/rm -rf {}'.format(temp_dir).split())
         return self
 
+    @property
+    def fractions(self):
+        r"""Output fraction of each element of secondary structure.
+
+        Fractions are computed summing over all residues.
+
+        Returns
+        -------
+        dict
+            Elements of the form {single-letter-code: fraction}
+        """
+        f = np.sum(self.profile, axis=0) / len(self.profile)
+        return dict(zip(self.dssp_codes, f))
+
+    @property
+    def collapsed(self):
+        r"""For every residue, collapse the secondary structure profile onto
+        the component with the highest probability
+
+        Returns
+        -------
+        :class:`~numpy:numpy.ndarray`
+            List of indexes corresponding to collapsed secondary structure
+            states
+        """
+        return self.profile.argmax(axis=1)
+
+    def disparity(self, other):
+        r"""Secondary Structure disparity of other profile to self, akin to
+        :math:`\chi^2`
+
+        :math:`\frac{1}{N(n-1)} \sum_{i=1}^{N}\sum_{j=1}^{n} (\frac{p_{ij}-q_ {ij}}{e})^2`
+
+        with :math:`N` number of residues and :math:`n` number of DSSP codes. Errors
+        :math:`e` are those of *self*, and are set to one if they have not been
+        initialized. We divide by :math:`n-1` because it is implied a normalized
+        distribution of secondary structure elements for each residue.
+
+        Parameters
+        ----------
+        other : :class:`~idpflex.properties.SecondaryStructureProperty`
+            Secondary structure property to compare to
+
+        Returns
+        -------
+        float
+            disparity measure
+        """  # noqa: E501
+        n = len(self.profile)
+        if n != len(other.profile):
+            raise ValueError('Profiles have different sizes')
+        dp = self.profile - other.profile
+        e = self.errors if self.errors is not None and np.all(self.errors)\
+            else np.ones((n, self.n_codes))
+        return np.sum(np.square(dp/e)) / (n * (self.n_codes - 1))
+
+    def plot(self, kind='percents'):
+        r"""Plot the secondary structure of the node holding the property
+
+        Parameters
+        ----------
+        kind : str
+            'percents': bar chart with each bar denoting the percent of
+            a particular secondary structure in all the protein; ---
+            'node': gray plot of secondary structure element probabilities
+            for each residue; ---
+            'leafs': color plot of secondary structure for each leaf under the
+            node. Leafs are sorted by increasing disparity to the
+            secondary structure of the node.
+        """
+        if kind == 'percents':
+            fig, ax = plt.subplots()
+            ind = np.arange(self.n_codes)  # the x locations for the groups
+            width = 0.75       # the width of the bars
+            pcs = [100 * self.fractions[c] for c in self.dssp_codes]
+            rects = ax.bar(ind, pcs, width, color='b')
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
+                        '%d' % int(height), ha='center', va='bottom')
+            ax.set_ylabel('Percents')
+            ax.set_xlabel('Secondary Structure')
+            ax.set_xticks(ind)
+            ax.set_xticklabels(list(self.dssp_codes))
+        elif kind == 'node':
+            fig, ax = plt.subplots()
+            ax.set_xlabel('Residue Index')
+            ind = np.arange(self.n_codes)  # the x locations for the groups
+            width = 0.5
+            ax.set_yticks(ind + width / 2 - 0.225)
+            ax.set_yticklabels(list(self.dssp_codes))
+            im = ax.imshow(self.profile.transpose(), interpolation=None,
+                           aspect='auto', cmap='Greys')
+            fig.colorbar(im, ax=ax)
+        elif kind == 'leafs':
+            fig, ax = plt.subplots()
+            ax.set_xlabel('leaf index sorted by disparity to average profile')
+            ax.set_ylabel('residue index')
+            leafs = self.node.leafs
+            if not leafs:
+                leafs = [self.node]
+            sss = [l[self.name] for l in leafs]  # Sec Str props of the leafs
+            sss.sort(key=lambda ss: self.disparity(ss))
+            collapsed = np.asarray([ss.collapsed for ss in sss]) / (self.n_codes - 1)
+            cm = ListedColormap(self.colors)
+            im = ax.imshow(collapsed.transpose(), interpolation=None,
+                           aspect='auto', cmap=cm)
+            tick_positions = 0.05 + np.arange(self.n_codes) / self.n_codes
+            cbar = fig.colorbar(im, ticks=tick_positions, ax=ax)
+            tick_lables = ['{}: {}'.format(k, v)
+                           for k, v in self.elements.items()]
+            cbar.ax.set_yticklabels(tick_lables)
+        plt.show()
+
 
 @decorate_as_node_property((('name', '(str) name of the profile'),
                             ('qvalues', '(:class:`~numpy:numpy.ndarray`) momentum transfer values'),  # noqa: E501
@@ -305,6 +432,7 @@ class ProfileProperty(object):
         self.qvalues = qvalues
         self.profile = profile
         self.errors = errors
+        self.node = None
 
 
 class SansLoaderMixin(object):
@@ -407,7 +535,7 @@ class SaxsLoaderMixin(object):
         args : str
             Arguments to pass to crysol
         silent : bool
-            Suppress crysol standard output and error
+            Suppress crysol standard output and standard error
         Returns
         -------
         self : :class:`~idpflex.properties.SaxsProperty`

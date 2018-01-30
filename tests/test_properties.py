@@ -3,7 +3,9 @@ from __future__ import print_function, absolute_import
 import random
 import numpy as np
 import pytest
+from matplotlib import pyplot as plt
 
+import idpflex
 from idpflex import properties as ps
 from idpflex.properties import SecondaryStructureProperty as SSP
 
@@ -111,6 +113,46 @@ class TestSecondaryStructureProperty(object):
         average_profile = np.mean(y, axis=0)
         np.testing.assert_array_almost_equal(average_profile,
                                              tree.root['ss'].y, decimal=12)
+
+    def test_fractions(self):
+        profile = np.random.rand(42, SSP.n_codes)  # not normalized
+        prop = SSP(profile=profile)
+        f = prop.fractions
+        assert f['H'] == np.sum(profile, axis=0)[0] / 42
+
+    def test_collapse(self):
+        profile = np.random.rand(42, SSP.n_codes)  # not normalized
+        prop = SSP(profile=profile)
+        c = prop.collapsed
+        assert c[0] == np.argmax(profile[0])
+
+    def test_similarity(self):
+        p = np.random.rand(42, SSP.n_codes)  # not normalized
+        o = np.zeros((42, SSP.n_codes))
+        pr = SSP(profile=p)
+        assert pr.similarity(SSP(profile=-p)) == 4 * \
+            pr.similarity(SSP(profile=o))
+
+    def test_plot_percents(self):
+        profile = np.random.rand(42, SSP.n_codes)  # not normalized
+        profile /= np.sum(profile, axis=1)[:, np.newaxis]  # normalized
+        prop = SSP(profile=profile)
+        prop.plot('percents')
+
+    def test_plot_node(self):
+        profile = np.random.rand(42, SSP.n_codes)  # not normalized
+        profile /= np.sum(profile, axis=1)[:, np.newaxis]  # normalized
+        prop = SSP(profile=profile)
+        prop.plot('node')
+
+    def test_plot_leafs(self, small_tree):
+        tree = small_tree['tree']
+        ss_props = list()
+        for i in range(tree.nleafs):
+            seq = ''.join(random.sample(1000*SSP.dssp_codes, 42))
+            ss_props.append(SSP().from_dssp_sequence(seq))
+        ps.propagator_size_weighted_sum(ss_props, tree)
+        tree.root['ss'].plot('leafs')
 
 
 class TestProfileProperty(object):
