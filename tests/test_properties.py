@@ -3,9 +3,7 @@ from __future__ import print_function, absolute_import
 import random
 import numpy as np
 import pytest
-from matplotlib import pyplot as plt
 
-import idpflex
 from idpflex import properties as ps
 from idpflex.properties import SecondaryStructureProperty as SSP
 

@@ -169,7 +169,8 @@ class SecondaryStructureProperty(object):
         secondary residue in every residue
     """  # noqa: E501
     #: Description of single-letter codes for secondary structure
-    elements = OrderedDict([('H', 'Alpha helix'), ('B', 'Isolated beta-bridge'),
+    elements = OrderedDict([('H', 'Alpha helix'),
+                            ('B', 'Isolated beta-bridge'),
                             ('E', 'Strand'), ('G', '3-10 helix'),
                             ('I', 'Pi helix'), ('T', 'Turn'),
                             ('S', 'Bend'), (' ', 'Unstructured')])
@@ -396,7 +397,8 @@ class SecondaryStructureProperty(object):
                 leafs = [self.node]
             sss = [l[self.name] for l in leafs]  # Sec Str props of the leafs
             sss.sort(key=lambda ss: self.disparity(ss))
-            collapsed = np.asarray([ss.collapsed for ss in sss]) / (self.n_codes - 1)
+            collapsed = np.asarray([ss.collapsed for ss in sss]) /\
+                        (self.n_codes - 1)
             cm = ListedColormap(self.colors)
             im = ax.imshow(collapsed.transpose(), interpolation=None,
                            aspect='auto', cmap=cm)
