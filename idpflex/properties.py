@@ -398,7 +398,7 @@ class SecondaryStructureProperty(object):
             sss = [l[self.name] for l in leafs]  # Sec Str props of the leafs
             sss.sort(key=lambda ss: self.disparity(ss))
             collapsed = np.asarray([ss.collapsed for ss in sss]) /\
-                        (self.n_codes - 1)
+                (self.n_codes - 1)
             cm = ListedColormap(self.colors)
             im = ax.imshow(collapsed.transpose(), interpolation=None,
                            aspect='auto', cmap=cm)
