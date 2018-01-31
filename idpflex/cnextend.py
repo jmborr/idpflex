@@ -71,7 +71,8 @@ class ClusterNodeX(hierarchy.ClusterNode):
         return list(leaf.id for leaf in self.leafs)
 
     def add_property(self, a_property):
-        r"""Insert or update a property in the set of properties
+        r"""Insert or update a property in the dict of properties and
+        initialize the 'node' attribute of the property to the owner node.
 
         Parameters
         ----------
@@ -79,6 +80,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
             a property instance
         """
         self._properties[a_property.name] = a_property
+        a_property.node = self
 
     def distance_submatrix(self, dist_mat):
         r"""Extract matrix of distances between leafs under the node.

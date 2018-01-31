@@ -61,6 +61,19 @@ def benchmark():
 
 
 @pytest.fixture(scope='session')
+def ss_benchmark():
+    r"""DSSP output
+
+    Returns
+    -------
+    dict
+        'dssp_file': absolute path to file.
+    """
+    return dict(dssp_file=os.path.join(data_dir, 'simulation', 'hiAPP.dssp'),
+                pdb_file=os.path.join(data_dir, 'simulation', 'hiAPP.pdb'))
+
+
+@pytest.fixture(scope='session')
 def trajectory_benchmark():
     r"""Load a trajectory into an MDAnalysis Universe instance
 
