@@ -7,7 +7,6 @@ from scipy.cluster import hierarchy
 
 from idpflex import cnextend as cnx
 
-
 class TestClusterNodeX(object):
 
     def test_property(self):

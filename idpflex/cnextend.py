@@ -1,5 +1,8 @@
 from __future__ import print_function, absolute_import
 
+import pickle
+import json
+import jsonpickle
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 import numpy as np
@@ -18,7 +21,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
         # inherit from *object*.
         # super(ClusterNodeX, self).__init__(*args, **kwargs)
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
-        self.parent = None
+        self.parent = None  # parent node
         self._tree = None
         self._properties = dict()
 
@@ -71,8 +74,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
         return list(leaf.id for leaf in self.leafs)
 
     def add_property(self, a_property):
-        r"""Insert or update a property in the dict of properties and
-        initialize the 'node' attribute of the property to the owner node.
+        r"""Insert or update a property in the set of properties
 
         Parameters
         ----------
@@ -80,7 +82,6 @@ class ClusterNodeX(hierarchy.ClusterNode):
             a property instance
         """
         self._properties[a_property.name] = a_property
-        a_property.node = self
 
     def distance_submatrix(self, dist_mat):
         r"""Extract matrix of distances between leafs under the node.
@@ -289,3 +290,35 @@ class Tree(object):
         else:
             nodes = self.nodes_above_depth(depth)[:-depth]
         return nodes
+
+    def save(self, filename):
+        r"""Serialize the tree and save to file
+
+        Parameters
+        ----------
+        filename: str
+            File name
+        """
+        with open(filename, 'wb') as outfile:
+            pickle.dump(self, outfile)
+
+
+def load_tree(filename):
+    r"""Load a previously saved tree
+
+    Parameters
+    ----------
+    filename: str
+        File name containing the serialized tree
+
+    Returns
+    -------
+    :class:`~idpflex.cnextend.Tree`
+        Tree instance stored in file
+    """
+    with open(filename, 'rb') as infile:
+        try:
+            t = pickle.load(infile)
+        except:
+            raise RuntimeError('Could not load the tree')
+        return t
