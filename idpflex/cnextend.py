@@ -1,8 +1,6 @@
 from __future__ import print_function, absolute_import
 
 import pickle
-import json
-import jsonpickle
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 import numpy as np
