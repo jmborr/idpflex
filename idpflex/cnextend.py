@@ -315,8 +315,5 @@ def load_tree(filename):
         Tree instance stored in file
     """
     with open(filename, 'rb') as infile:
-        try:
-            t = pickle.load(infile)
-        except:
-            raise RuntimeError('Could not load the tree')
-        return t
+        t = pickle.load(infile)
+    return t

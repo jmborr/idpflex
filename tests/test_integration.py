@@ -9,7 +9,7 @@ from idpflex import cnextend
 
 
 def test_save(sans_fit):
-    r"""Save a tree containing SANS properties"""
+    r"""Save and load a tree containing SANS properties"""
     t = sans_fit['tree']
     handle, name = tempfile.mkstemp()
     t.save(name)
