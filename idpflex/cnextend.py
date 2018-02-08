@@ -80,6 +80,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
             a property instance
         """
         self._properties[a_property.name] = a_property
+        a_property.node = self
 
     def distance_submatrix(self, dist_mat):
         r"""Extract matrix of distances between leafs under the node.
