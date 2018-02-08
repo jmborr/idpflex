@@ -8,3 +8,5 @@ tqdm
 sphinx
 sphinx_rtd_theme
 matplotlib
+nglview
+pathos
