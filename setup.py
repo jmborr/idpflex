@@ -26,7 +26,7 @@ test_requirements = [
 
 setup(
     name='idpflex',
-    version='version='version='0.1.2''',
+    version='0.1.2',
     long_description=readme,
     author="Jose Borreguero",
     author_email='borreguero@gmail.com',
