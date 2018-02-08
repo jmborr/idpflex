@@ -2,6 +2,12 @@
 History
 =======
 
+0.1.2 (2018-02-10)
+------------------
+
+* Clustering Jupyter notebook
+* Secondary structure property
+
 0.1.1.0 (2018-01-11)
 --------------------
 
