@@ -9,6 +9,7 @@ import functools
 import numpy as np
 import numbers
 from collections import OrderedDict
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 
@@ -381,32 +382,47 @@ class SecondaryStructureProperty(object):
         elif kind == 'node':
             fig, ax = plt.subplots()
             ax.set_xlabel('Residue Index')
+            ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator(integer=True))
             ind = np.arange(self.n_codes)  # the x locations for the groups
+            im = ax.imshow(self.profile.transpose(), interpolation='none',
+                           origin='lower', aspect='auto', cmap='Greys',
+                           extent=[0.5, self.profile.shape[0] + 0.5,
+                                   -0.5, self.profile.shape[1] - 0.5]
+                           )
             width = 0.5
             ax.set_yticks(ind + width / 2 - 0.225)
             ax.set_yticklabels(list(self.dssp_codes))
-            im = ax.imshow(self.profile.transpose(), interpolation=None,
-                           aspect='auto', cmap='Greys')
             fig.colorbar(im, ax=ax)
         elif kind == 'leafs':
             fig, ax = plt.subplots()
-            ax.set_xlabel('leaf index sorted by disparity to average profile')
+            ax.set_xlabel('leaf index sorted by increasing disparity to'
+                          ' average profile')
             ax.set_ylabel('residue index')
             leafs = self.node.leafs
             if not leafs:
                 leafs = [self.node]
             sss = [l[self.name] for l in leafs]  # Sec Str props of the leafs
             sss.sort(key=lambda ss: self.disparity(ss))
-            collapsed = np.asarray([ss.collapsed for ss in sss]) /\
-                (self.n_codes - 1)
+            collapsed = np.asarray([ss.collapsed for ss in sss])
             cm = ListedColormap(self.colors)
-            im = ax.imshow(collapsed.transpose(), interpolation=None,
-                           aspect='auto', cmap=cm)
-            tick_positions = 0.05 + np.arange(self.n_codes) / self.n_codes
+            im = ax.imshow(collapsed.transpose(), interpolation='none',
+                           norm=mpl.colors.Normalize(vmin=0,
+                                                     vmax=self.n_codes - 1),
+                           origin='lower', aspect='auto', cmap=cm,
+                           extent=[0.5, collapsed.shape[0] + 0.5,
+                                   0.5, collapsed.shape[1] + 0.5])
+            # Force integer values in tick labels
+            ax.xaxis.set_major_locator(mpl.ticker.MaxNLocator(integer=True))
+            ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator(integer=True))
+            # Color bar
+            tick_positions = 0.5 + np.arange(self.n_codes) *\
+                (self.n_codes - 1) / self.n_codes
             cbar = fig.colorbar(im, ticks=tick_positions, ax=ax)
             tick_lables = ['{}: {}'.format(k, v)
                            for k, v in self.elements.items()]
             cbar.ax.set_yticklabels(tick_lables)
+        plt.grid()
+        plt.tight_layout()
         plt.show()
 
 

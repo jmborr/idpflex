@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 
 import sys
 
+import pickle
 from scipy.cluster import hierarchy
 from tqdm import tqdm
 from collections import namedtuple
@@ -31,6 +32,17 @@ class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
     def keys(self):
         r"""Return the list of field names"""
         return self._fields
+
+    def save(self, filename):
+        r"""Serialize the cluster trove and save to file
+
+        Parameters
+        ----------
+        filename: str
+            File name
+        """
+        with open(filename, 'wb') as outfile:
+            pickle.dump(self, outfile)
 
 
 def cluster_trajectory(a_universe, selection='not name H*',
@@ -97,3 +109,21 @@ and retrieving {} representatives from each segment.
         leaf.add_property(ScalarProperty(name='iframe', y=rep_ifr[ileaf]))
 
     return ClusterTrove(rep_ifr, rmsd, tree)
+
+
+def load_cluster_trove(filename):
+    r"""Load a previously saved ClusterTrove instance
+
+    Parameters
+    ----------
+    filename: str
+        File name containing the serialized tree
+
+    Returns
+    -------
+    :class:`~idpflex.cluster.ClusterTrove`
+        Cluster trove instance stored in file
+    """
+    with open(filename, 'rb') as infile:
+        t = pickle.load(infile)
+    return t
