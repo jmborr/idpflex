@@ -416,7 +416,7 @@ class SecondaryStructureProperty(object):
             ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator(integer=True))
             # Color bar
             tick_positions = 0.5 + np.arange(self.n_codes) *\
-                                   (self.n_codes - 1) / self.n_codes
+                (self.n_codes - 1) / self.n_codes
             cbar = fig.colorbar(im, ticks=tick_positions, ax=ax)
             tick_lables = ['{}: {}'.format(k, v)
                            for k, v in self.elements.items()]

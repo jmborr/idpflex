@@ -44,6 +44,7 @@ class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
         with open(filename, 'wb') as outfile:
             pickle.dump(self, outfile)
 
+
 def cluster_trajectory(a_universe, selection='not name H*',
                        segment_length=1000, n_representatives=1000):
     r"""Cluster a set of representative structures
