@@ -68,6 +68,7 @@ class TestResidueContactMap(object):
     def test_from_pdb(self, ss_benchmark):
         filename = ss_benchmark['pdb_file']
         cm = ps.ResidueContactMap().from_pdb(filename, 8, 'name CA')
+        assert np.sum(cm.y) == 351
 
     @pytest.mark.skip(reason="Plotting not enabled in the CI")
     def test_plot(self, trajectory_benchmark):
