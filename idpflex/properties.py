@@ -143,7 +143,7 @@ class ResidueContactMap(object):
     ----------
     name: str
         Name of the contact map
-    selection: :class:`~MDAnalysis:MDAnalysis.core.selection.Selection`
+    selection: :class:`~MDAnalysis.core.groups.AtomGroup`
         Atomic selection for calculation of the contact map, which is then
         projected to a residue based map.
     cmap: :class:`~numpy:numpy.ndarray`
