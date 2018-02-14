@@ -61,7 +61,7 @@ class TestResidueContactMap(object):
     def test_from_universe(self, trajectory_benchmark):
         cm = ps.ResidueContactMap().from_universe(trajectory_benchmark,
                                                   8, 'name CA')
-        assert np.sum(cm.y) == 363
+        assert np.sum(cm.y) == 333
         cm = ps.ResidueContactMap().from_universe(trajectory_benchmark, 4)
         assert np.sum(cm.y) == 313
 
