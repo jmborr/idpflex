@@ -11,6 +11,7 @@ import numbers
 from collections import OrderedDict
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+from matplotlib.ticker import FuncFormatter, MaxNLocator, AutoMinorLocator
 from matplotlib.colors import ListedColormap
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import contact_matrix
@@ -193,15 +194,15 @@ class ResidueContactMap(object):
         for i in range(n_atoms - 1):
             k = unique_resids.index(resids[i])
             for j in range(i + 1, n_atoms):
-                l = unique_resids.index(resids[j])
-                self.cmap[k][l] = self.cmap[k][l] or cm[i][j]
+                ll = unique_resids.index(resids[j])
+                self.cmap[k][ll] = self.cmap[k][ll] or cm[i][j]
         # self always in contact
         for k in range(n_res):
             self.cmap[k][k] = True
         # symmetrize the contact map
         for k in range(n_res - 1):
-            for l in range(k + 1, n_res):
-                self.cmap[l][k] = self.cmap[k][l]
+            for ll in range(k + 1, n_res):
+                self.cmap[ll][k] = self.cmap[k][ll]
         self.errors = np.zeros(self.cmap.shape)
         return self
 
@@ -227,7 +228,6 @@ class ResidueContactMap(object):
 
     def plot(self):
         r"""Plot the residue contact map of the node"""
-        from matplotlib.ticker import FuncFormatter, MaxNLocator, AutoMinorLocator
         resids = [str(i) for i in list(set(self.selection.resids))]
 
         def format_fn(tick_val, tick_pos):
