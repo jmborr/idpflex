@@ -12,7 +12,8 @@ from collections import OrderedDict
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
-
+from MDAnalysis.analysis.distances import contact_matrix
+from MDAnalysis.coordinates.PDB import PDBReader
 
 def register_as_node_property(cls, nxye):
     r"""Endows a class with the node property protocol.
@@ -126,6 +127,130 @@ class ScalarProperty(object):
         if not isinstance(y, numbers.Real):
             raise TypeError("y must be a non-complex number")
         self.y = y
+
+
+@decorate_as_node_property((('name', '(str) name of the contact map'),
+                            ('selection', '(:class:`~MDAnalysis:MDAnalysis.core.selection.Selection`) atom selection'),  # noqa: E501
+                            ('cmap', '(:class:`~numpy:numpy.ndarray`) contact map between residues'),  # noqa: E501
+                            ('errors', '(:class:`~numpy:numpy.ndarray`) undeterminacies in the contact map')))  # noqa: E501
+class ResidueContactMap(object):
+    r"""Contact map between residues of the conformation using different
+    definitions of contact.
+
+    Parameters
+    ----------
+    name: str
+        Name of the contact map
+    selection: :class:`~MDAnalysis:MDAnalysis.core.selection.Selection`
+        Atomic selection for calculation of the contact map, which is then
+        projected to a residue based map.
+    cmap: :class:`~numpy:numpy.ndarray`
+        Contact map between residues of the atomic selection
+    errors: :class:`~numpy:numpy.ndarray`
+        Underterminacies for every contact of cmap
+    cutoff: float
+        Cut-off distance defining a contact between two atoms
+    """
+
+    def __init__(self, name='cm', selection=None, cmap=None, errors=None,
+                 cutoff=None):
+        self.name = name
+        self.selection = selection
+        self.cmap = cmap
+        self.errors = errors
+        self.cutoff = cutoff
+
+    def from_universe(self, a_universe, cutoff, selection=None):
+        r"""Calculate residue contact map from an MDAnalysis Universe instance
+
+        Parameters
+        ----------
+        a_universe: :class:`~MDAnalysis.core.universe.Universe`
+            Universe instance describing the configuration
+        cutoff: float
+            Cut-off distance defining a contact between two atoms
+        selection: str
+            Atomic selection for calculating interatomic contacts. All atoms
+            are used if None is passed
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.ResidueContactMap`
+            Instantiated ResidueContactMap object
+        """
+        if selection is None:
+            self.selection = a_universe.atoms
+        else:
+            self.selection = a_universe.select_atoms(selection)
+        n_atoms = len(self.selection)
+        cm = contact_matrix(self.selection.positions, cutoff=cutoff)
+        # Cast the atomic map into a residue based map
+        resids = self.selection.resids
+        unique_resids = list(set(resids))
+        n_res = len(unique_resids)
+        self.cmap = np.full((n_res, n_res), False)
+        for i in range(n_atoms - 1):
+            k = unique_resids.index(resids[i])
+            for j in range(i + 1, n_atoms):
+                l = unique_resids.index(resids[j])
+                self.cmap[k][l] = self.cmap[k][l] or cm[i][j]
+        # self always in contact
+        for k in range(n_res):
+            self.cmap[k][k] = True
+        # symmetrize the contact map
+        for k in range(n_res - 1):
+            for l in range(k + 1, n_res):
+                self.cmap[l][k] = self.cmap[k][l]
+        self.errors = np.zeros(self.cmap.shape)
+        return self
+
+    def from_pdb(self, filename, cutoff, selection=None):
+        r"""Calculate residue contact map from a PDB
+
+        Parameters
+        ----------
+        filename: str
+            Path to the file in PDB format
+        cutoff: float
+            Cut-off distance defining a contact between two atoms
+        selection: str
+            Atomic selection for calculating interatomic contacts. All atoms
+            are used if None is passed
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.ResidueContactMap`
+            Instantiated ResidueContactMap object
+        """
+        return self.from_universe(PDBReader(filename), cutoff, selection)
+
+    def plot(self):
+        r"""Plot the residue contact map of the node"""
+        from matplotlib.ticker import FuncFormatter, MaxNLocator, AutoMinorLocator
+        resids = [str(i) for i in list(set(self.selection.resids))]
+
+        def format_fn(tick_val, tick_pos):
+            r"""Translates matrix index to residue number"""
+            if int(tick_val) < len(resids):
+                return resids[int(tick_val)]
+            else:
+                return ''
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Residue Numbers', size=16)
+        ax.xaxis.set_major_formatter(FuncFormatter(format_fn))
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.set_ylabel('Residue Numbers', size=16)
+        ax.yaxis.set_major_formatter(FuncFormatter(format_fn))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.grid(color='r', which='major', linestyle='-', linewidth=1)
+        ax.grid(color='b', which='minor', linestyle=':', linewidth=1)
+        im = ax.imshow(self.cmap, interpolation='none', origin='lower',
+                       aspect='auto', cmap='Greys')
+        fig.colorbar(im, ax=ax)
+        plt.tight_layout()
+        plt.show()
 
 
 @decorate_as_node_property((('name', '(str) name of the profile'),
