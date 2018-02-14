@@ -12,8 +12,9 @@ from collections import OrderedDict
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
+import MDAnalysis as mda
 from MDAnalysis.analysis.distances import contact_matrix
-from MDAnalysis.coordinates.PDB import PDBReader
+
 
 def register_as_node_property(cls, nxye):
     r"""Endows a class with the node property protocol.
@@ -222,7 +223,7 @@ class ResidueContactMap(object):
         self: :class:`~idpflex.properties.ResidueContactMap`
             Instantiated ResidueContactMap object
         """
-        return self.from_universe(PDBReader(filename), cutoff, selection)
+        return self.from_universe(mda.Universe(filename), cutoff, selection)
 
     def plot(self):
         r"""Plot the residue contact map of the node"""
