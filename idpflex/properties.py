@@ -132,7 +132,7 @@ class ScalarProperty(object):
 
 
 @decorate_as_node_property((('name', '(str) name of the contact map'),
-                            ('selection', '(:class:`~MDAnalysis:MDAnalysis.core.selection.Selection`) atom selection'),  # noqa: E501
+                            ('selection', '(:class:`~MDAnalysis.core.groups.AtomGroup`) atom selection'),  # noqa: E501
                             ('cmap', '(:class:`~numpy:numpy.ndarray`) contact map between residues'),  # noqa: E501
                             ('errors', '(:class:`~numpy:numpy.ndarray`) undeterminacies in the contact map')))  # noqa: E501
 class ResidueContactMap(object):
