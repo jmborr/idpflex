@@ -56,6 +56,27 @@ class TestRegisterDecorateProperties(object):
         assert some_prop.e == 'ce'
 
 
+class TestResidueContactMap(object):
+
+    def test_from_universe(self, trajectory_benchmark):
+        cm = ps.ResidueContactMap().from_universe(trajectory_benchmark,
+                                                  8, 'name CA')
+        assert np.sum(cm.y) == 333
+        cm = ps.ResidueContactMap().from_universe(trajectory_benchmark, 4)
+        assert np.sum(cm.y) == 295
+
+    def test_from_pdb(self, ss_benchmark):
+        filename = ss_benchmark['pdb_file']
+        cm = ps.ResidueContactMap().from_pdb(filename, 8, 'name CA')
+        assert np.sum(cm.y) == 351
+
+    @pytest.mark.skip(reason="Plotting not enabled in the CI")
+    def test_plot(self, trajectory_benchmark):
+        cm = ps.ResidueContactMap().from_universe(trajectory_benchmark,
+                                                  8, 'name CA')
+        cm.plot()
+
+
 class TestSecondaryStructureProperty(object):
 
     def test_class_decorated_as_node_property(self):
