@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.5 ()
+--------
+
+* Update notebook and docs with data repo (PR #51)
+
 0.1.4 (2018-02-11)
 ------------------
 

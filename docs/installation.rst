@@ -14,7 +14,7 @@ To install idpflex, run this command in your terminal:
 
     $ pip install idpflex
 
-This is the preferred method to install idpflex, as it will always install the most recent stable release. 
+This is the preferred method to install idpflex, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -72,17 +72,19 @@ There are several ways to obtain this dataset:
     :align: center
     :alt: download dataset as zipped file
 
-3. Download individual files using GitHub's web interface by browsing to the file. If the file is in binary format, then click in Download button.
+3. Download individual files using GitHub's web interface by browsing to the
+file. If the file is in binary format, then click in Download button:
 
 .. image:: images/data_download_file.png
     :width: 800px
     :align: center
-   :alt: download a single file
+    :alt: download dataset as zipped file
 
-If the file is in ASCII format, you must first click in the `Raw` view
+If the file is in ASCII format, you must first click in the `Raw` view. After
+this you can right-click and `Save as`.
 
 .. image:: images/data_download_ascii_file.png
     :width: 800px
     :align: center
-   :alt: download a single file
-	 
+    :alt: download dataset as zipped file
+
