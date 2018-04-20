@@ -103,21 +103,23 @@ class ScalarProperty(object):
 
     Instances have *name*, *x*, *y*, and *e* attributes, so they will
     follow the property node protocol.
+
+    Parameters
+    ----------
+    name : str
+        Name associated to this type of property
+    x : float
+        Domain of the property
+    y : float
+        value of the property
+    e: float
+        error of the property's value
     """
 
     def __init__(self, name=None, x=0.0, y=0.0, e=0.0):
         r"""
 
-        Parameters
-        ----------
-        name : str
-            Name associated to this type of property
-        x : float
-            Domain of the property
-        y : float
-            value of the property
-        e: float
-            error of the property's value
+
         """
         self.name = name
         self.x = x
@@ -129,6 +131,69 @@ class ScalarProperty(object):
         if not isinstance(y, numbers.Real):
             raise TypeError("y must be a non-complex number")
         self.y = y
+
+
+class RadiusOfGyrationMixin(object):
+    r"""Mixin class providing a set of methods to load the Radius of Gyration
+    data into a Scalar property
+    """
+
+    def from_universe(self, a_universe, selection=None):
+        r"""Calculate radius of gyration from an MDAnalysis Universe instance
+
+        Parameters
+        ----------
+        a_universe: :class:`~MDAnalysis.core.universe.Universe`
+            Universe instance describing the configuration
+        selection: str
+            Atomic selection. All atoms considered if None is passed
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.ResidueContactMap`
+            Instantiated RadiusOfGyration object
+        """
+        if selection is None:
+            self.selection = a_universe.atoms
+        else:
+            self.selection = a_universe.select_atoms(selection)
+        self.y = self.selection.atoms.radius_of_gyration()
+        return self
+
+    def from_pdb(self, filename, selection=None):
+        r"""Calculate Rg from a PDB file
+
+        Parameters
+        ----------
+        selection: str
+            Atomic selection for calculating Rg. All atoms considered if None
+            is passed
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.RadiusOfGyration`
+            Instantiated RadiusOfGyration object
+        """
+        return self.from_universe(mda.Universe(filename), selection)
+
+
+class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
+    r"""Implementation of a node property to store the radius of gyration.
+
+    """
+    def __init__(self, *args, **kwargs):
+        ScalarProperty.__init__(self, *args, **kwargs)
+        if self.name is None:
+            self.name = 'rg'  # Default name
+
+    @property
+    def rg(self):
+        r"""Property to read and write the radius of gyration value"""
+        return self.y
+
+    @rg.setter
+    def rg(self, value):
+        self.y = value
 
 
 @decorate_as_node_property((('name', '(str) name of the contact map'),
