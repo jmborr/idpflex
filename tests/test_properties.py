@@ -56,6 +56,14 @@ class TestRegisterDecorateProperties(object):
         assert some_prop.e == 'ce'
 
 
+class TestRadiusOfGyration(object):
+
+    def test_from_pdb(self, ss_benchmark):
+        filename = ss_benchmark['pdb_file']
+        prop = ps.RadiusOfGyration().from_pdb(filename, 'name CA')
+        np.testing.assert_almost_equal(prop.rg, 8.75, decimal=2)
+
+
 class TestResidueContactMap(object):
 
     def test_from_universe(self, trajectory_benchmark):
