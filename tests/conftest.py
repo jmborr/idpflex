@@ -11,7 +11,8 @@ from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 import MDAnalysis as mda
 
-from idpflex import cnextend, properties as idprop
+from idpflex import cnextend
+from idpflex import properties as idprop
 
 # Resolve the path to the "external data"
 this_module_path = sys.modules[__name__].__file__
@@ -52,10 +53,17 @@ def small_tree():
 @pytest.fixture(scope='session')
 def benchmark():
     z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
+    t = cnextend.Tree(z)
+    n_leafs =  22379
+    # Instantiate scalar properties for the leaf nodes, then propagate
+    # up the tree
+    sc = np.random.normal(loc=100.0, size=n_leafs)
+    sc_p = [idprop.ScalarProperty(name='sc', y=s) for s in sc]
+    idprop.propagator_size_weighted_sum(sc_p, t)
     return {'z': z,
-            'tree': cnextend.Tree(z),
+            'tree': t,
             'nnodes': 44757,
-            'nleafs': 22379,
+            'nleafs': n_leafs,
             'simple_property': [SimpleProperty(i) for i in range(22379)],
             }
 
