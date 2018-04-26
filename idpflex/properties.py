@@ -170,7 +170,7 @@ class ScalarProperty(object):
             estimate error from histogram counts
         kwargs : dict
             Additional arguments to underlying
-            :func:`~matplotlib:matplotlib.axes.Axes.hist`.
+            :meth:`~matplotlib.axes.Axes.hist`
 
         Returns
         -------
