@@ -56,6 +56,20 @@ class TestRegisterDecorateProperties(object):
         assert some_prop.e == 'ce'
 
 
+class TestScalarProperty(object):
+
+    def test_histogram(self, benchmark):
+        root_prop = benchmark['tree'].root['sc']
+        edges, h, e = root_prop.histogram(bins=1, errors=True)
+        assert h[0] == benchmark['nleafs']
+        assert e[0] == np.sqrt(h[0])
+
+    def test_plot_histogram(self, benchmark):
+        root_prop = benchmark['tree'].root['sc']
+        ax = root_prop.plot(kind='histogram', errors=True, bins=1)
+        assert ax.patches[0]._height == benchmark['nleafs']
+
+
 class TestRadiusOfGyration(object):
 
     def test_from_pdb(self, ss_benchmark):

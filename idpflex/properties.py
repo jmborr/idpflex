@@ -132,6 +132,61 @@ class ScalarProperty(object):
             raise TypeError("y must be a non-complex number")
         self.y = y
 
+    def histogram(self, bins=10, errors=False, **kwargs):
+        r"""Histogram of values for the leaf nodes
+
+        Parameters
+        ----------
+        nbins : int
+            number of histogram bins
+        errors : bool
+            estimate error from histogram counts
+        kwargs : dict
+            Additional arguments to underlying :func:`~numpy:numpy.histogram`
+
+        Returns
+        -------
+        :class:`~numpy:numpy.ndarray`
+            histogram bin edges
+        :class:`~numpy:numpy.ndarray`
+            histogram values
+        :class:`~numpy:numpy.ndarray`
+            Errors for histogram counts, if `error=True`. Otherwise None.
+        """
+        ys = [l[self.name].y for l in self.node.leafs]
+        h, edges = np.histogram(ys, bins=bins, **kwargs)
+        e = np.sqrt(h) if errors else None
+        return edges, h, e
+
+    def plot(self, kind='histogram', errors=False, **kwargs):
+        r"""
+
+        Parameters
+        ----------
+        kind : str
+            'histogram': Gater Rg for leafs under node associated to this
+            property, then make a histogram.
+        errors : bool
+            estimate error from histogram counts
+        kwargs : dict
+            Additional arguments to underlying
+            :meth:`~matplotlib.axes.Axes.hist`
+
+        Returns
+        -------
+        :class:`~matplotlib:matplotlib.axes.Axes`
+            Axes object holding the plot
+        """
+        if kind == 'histogram':
+            ys = [l[self.name].y for l in self.node.leafs]
+            fig, ax = plt.subplots()
+            n, bins, patches = ax.hist(ys, **kwargs)
+            if errors:
+                h, edges = np.histogram(ys, bins=bins)
+                centers = 0.5 * (edges[1:] + edges[:-1])
+                ax.bar(centers, h, width=0.05, yerr=np.sqrt(h))
+        return ax
+
 
 class RadiusOfGyrationMixin(object):
     r"""Mixin class providing a set of methods to load the Radius of Gyration
