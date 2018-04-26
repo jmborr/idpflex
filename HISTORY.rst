@@ -4,6 +4,7 @@ History
 
 0.1.6 (TBA)
 ------------------
+* plot histogram for ScalarProperty (PR #56)
 * Added Radius of Gyration property (PR #53)
 
 0.1.5 (2018-02-15)
