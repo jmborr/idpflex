@@ -54,7 +54,7 @@ def small_tree():
 def benchmark():
     z = np.loadtxt(os.path.join(data_dir, 'linkage_matrix'))
     t = cnextend.Tree(z)
-    n_leafs =  22379
+    n_leafs = 22379
     # Instantiate scalar properties for the leaf nodes, then propagate
     # up the tree
     sc = np.random.normal(loc=100.0, size=n_leafs)
