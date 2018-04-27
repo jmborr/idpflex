@@ -185,6 +185,8 @@ class ScalarProperty(object):
                 h, edges = np.histogram(ys, bins=bins)
                 centers = 0.5 * (edges[1:] + edges[:-1])
                 ax.bar(centers, h, width=0.05, yerr=np.sqrt(h))
+            ax.set_xlabel(self.name, size=25)
+            ax.set_ylabel('Counts', size=25)
         return ax
 
 

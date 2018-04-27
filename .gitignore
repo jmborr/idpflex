@@ -63,3 +63,6 @@ target/
 
 # Pycharm artifacts
 .idea
+
+# Notebooks
+notebooks/.ipynb_checkpoints/*
