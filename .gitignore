@@ -11,6 +11,7 @@ __pycache__/
 env/
 build/
 develop-eggs/
+.bak_eggs/
 dist/
 downloads/
 eggs/
@@ -63,3 +64,8 @@ target/
 
 # Pycharm artifacts
 .idea
+
+# Notebooks
+notebooks/.ipynb_checkpoints/*
+
+*.npz
