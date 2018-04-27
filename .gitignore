@@ -11,6 +11,7 @@ __pycache__/
 env/
 build/
 develop-eggs/
+.bak_eggs/
 dist/
 downloads/
 eggs/
@@ -66,3 +67,5 @@ target/
 
 # Notebooks
 notebooks/.ipynb_checkpoints/*
+
+*.npz
