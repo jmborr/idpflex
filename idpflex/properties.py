@@ -198,8 +198,7 @@ class EndToEndMixin(object):
     def from_universe(self, a_universe, selection='name CA'):
         r"""Calculate radius of gyration from an MDAnalysis Universe instance
 
-        Will apply the periodic boundary conditions of the Universe instance,
-        if available.
+        Does not apply periodic boundary conditions
 
         Parameters
         ----------
@@ -216,11 +215,15 @@ class EndToEndMixin(object):
         """
         selection = a_universe.select_atoms(selection)
         self.pair = (selection[0], selection[-1])
-        self.y = mda_dist(self.pair[0], self.pair[1], box=a_universe.box)
+        r = self.pair[0].position - self.pair[1].position
+        self.y = np.linalg.norm(r)
         return self
 
     def from_pdb(self, filename, selection='name CA'):
-        r"""Calculat end-to-end distance from a PDB file
+        r"""Calculate end-to-end distance from a PDB file
+
+        Does not apply periodic boundary conditions
+
 
         Parameters
         ----------

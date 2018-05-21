@@ -70,6 +70,14 @@ class TestScalarProperty(object):
         assert ax.patches[0]._height == benchmark['nleafs']
 
 
+class TestEndToEnd(object):
+
+    def test_from_pdb(self, ss_benchmark):
+        filename = ss_benchmark['pdb_file']
+        prop = ps.EndToEnd().from_pdb(filename)
+        np.testing.assert_almost_equal(prop.end_to_end, 9.244, decimal=3)
+
+
 class TestRadiusOfGyration(object):
 
     def test_from_pdb(self, ss_benchmark):
