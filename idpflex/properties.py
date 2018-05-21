@@ -15,6 +15,7 @@ from matplotlib.ticker import FuncFormatter, MaxNLocator, AutoMinorLocator
 from matplotlib.colors import ListedColormap
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import contact_matrix
+from MDAnalysis.analysis.distances import dist as mda_dist
 
 
 def register_as_node_property(cls, nxye):
@@ -190,6 +191,74 @@ class ScalarProperty(object):
         return ax
 
 
+class EndToEndMixin(object):
+    r"""Mixin class providing a set of methods to load and calculate
+    the end-to-end distance for a protein"""
+
+    def from_universe(self, a_universe, selection='name CA'):
+        r"""Calculate radius of gyration from an MDAnalysis Universe instance
+
+        Will apply the periodic boundary conditions of the Universe instance,
+        if available.
+
+        Parameters
+        ----------
+        a_universe: :class:`~MDAnalysis.core.universe.Universe`
+            Universe instance describing the configuration
+        selection: str
+            Atomic selection. The first and last atoms of the selection are
+            considered for the calculation of the end-to-end distance.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.EndToEnd`
+            Instantiated EndToEnd object
+        """
+        selection = a_universe.select_atoms(selection)
+        self.pair = (selection[0], selection[-1])
+        self.y = mda_dist(self.pair[0], self.pair[1], box=a_universe.box)
+        return self
+
+    def from_pdb(self, filename, selection='name CA'):
+        r"""Calculat end-to-end distance from a PDB file
+
+        Parameters
+        ----------
+        filename: str
+            path to the PDB file
+        selection: str
+            Atomic selection. The first and last atoms of the selection are
+            considered for the calculation of the end-to-end distance.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.EndToEnd`
+            Instantiated EndToEnd object
+        """
+        return self.from_universe(mda.Universe(filename), selection)
+
+
+class EndToEnd(ScalarProperty, EndToEndMixin):
+    r"""Implementation of a node property to store the end-to-end distance
+
+    See :class:`~idpflex.properties.ScalarProperty for initialization
+    """
+
+    def __init__(self, *args, **kwargs):
+        ScalarProperty.__init__(self, *args, **kwargs)
+        if self.name is None:
+            self.name = 'end_to_end'
+
+    @property
+    def end_to_end(self):
+        r"""Property to read and set the end-to-end distance"""
+        return self.y
+
+    @end_to_end.setter
+    def end_to_end(self, value):
+        self.y = value
+
+
 class RadiusOfGyrationMixin(object):
     r"""Mixin class providing a set of methods to load the Radius of Gyration
     data into a Scalar property
@@ -207,7 +276,7 @@ class RadiusOfGyrationMixin(object):
 
         Returns
         -------
-        self: :class:`~idpflex.properties.ResidueContactMap`
+        self: :class:`~idpflex.properties.RadiusOfGyration`
             Instantiated RadiusOfGyration object
         """
         if selection is None:
@@ -222,6 +291,8 @@ class RadiusOfGyrationMixin(object):
 
         Parameters
         ----------
+        filename: str
+            path to the PDB file
         selection: str
             Atomic selection for calculating Rg. All atoms considered if None
             is passed
@@ -237,7 +308,9 @@ class RadiusOfGyrationMixin(object):
 class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
     r"""Implementation of a node property to store the radius of gyration.
 
+    See :class:`~idpflex.properties.ScalarProperty for initialization
     """
+
     def __init__(self, *args, **kwargs):
         ScalarProperty.__init__(self, *args, **kwargs)
         if self.name is None:
