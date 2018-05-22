@@ -190,6 +190,77 @@ class ScalarProperty(object):
         return ax
 
 
+class EndToEndMixin(object):
+    r"""Mixin class providing a set of methods to load and calculate
+    the end-to-end distance for a protein"""
+
+    def from_universe(self, a_universe, selection='name CA'):
+        r"""Calculate radius of gyration from an MDAnalysis Universe instance
+
+        Does not apply periodic boundary conditions
+
+        Parameters
+        ----------
+        a_universe: :class:`~MDAnalysis.core.universe.Universe`
+            Universe instance describing the configuration
+        selection: str
+            Atomic selection. The first and last atoms of the selection are
+            considered for the calculation of the end-to-end distance.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.EndToEnd`
+            Instantiated EndToEnd object
+        """
+        selection = a_universe.select_atoms(selection)
+        self.pair = (selection[0], selection[-1])
+        r = self.pair[0].position - self.pair[1].position
+        self.y = np.linalg.norm(r)
+        return self
+
+    def from_pdb(self, filename, selection='name CA'):
+        r"""Calculate end-to-end distance from a PDB file
+
+        Does not apply periodic boundary conditions
+
+
+        Parameters
+        ----------
+        filename: str
+            path to the PDB file
+        selection: str
+            Atomic selection. The first and last atoms of the selection are
+            considered for the calculation of the end-to-end distance.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.EndToEnd`
+            Instantiated EndToEnd object
+        """
+        return self.from_universe(mda.Universe(filename), selection)
+
+
+class EndToEnd(ScalarProperty, EndToEndMixin):
+    r"""Implementation of a node property to store the end-to-end distance
+
+    See :class:`~idpflex.properties.ScalarProperty` for initialization
+    """
+
+    def __init__(self, *args, **kwargs):
+        ScalarProperty.__init__(self, *args, **kwargs)
+        if self.name is None:
+            self.name = 'end_to_end'
+
+    @property
+    def end_to_end(self):
+        r"""Property to read and set the end-to-end distance"""
+        return self.y
+
+    @end_to_end.setter
+    def end_to_end(self, value):
+        self.y = value
+
+
 class RadiusOfGyrationMixin(object):
     r"""Mixin class providing a set of methods to load the Radius of Gyration
     data into a Scalar property
@@ -207,7 +278,7 @@ class RadiusOfGyrationMixin(object):
 
         Returns
         -------
-        self: :class:`~idpflex.properties.ResidueContactMap`
+        self: :class:`~idpflex.properties.RadiusOfGyration`
             Instantiated RadiusOfGyration object
         """
         if selection is None:
@@ -222,6 +293,8 @@ class RadiusOfGyrationMixin(object):
 
         Parameters
         ----------
+        filename: str
+            path to the PDB file
         selection: str
             Atomic selection for calculating Rg. All atoms considered if None
             is passed
@@ -237,7 +310,9 @@ class RadiusOfGyrationMixin(object):
 class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
     r"""Implementation of a node property to store the radius of gyration.
 
+    See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
+
     def __init__(self, *args, **kwargs):
         ScalarProperty.__init__(self, *args, **kwargs)
         if self.name is None:
