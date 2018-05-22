@@ -15,7 +15,6 @@ from matplotlib.ticker import FuncFormatter, MaxNLocator, AutoMinorLocator
 from matplotlib.colors import ListedColormap
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import contact_matrix
-from MDAnalysis.analysis.distances import dist as mda_dist
 
 
 def register_as_node_property(cls, nxye):
