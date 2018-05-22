@@ -4,6 +4,7 @@ six
 h5py
 lmfit
 MDAnalysis
+mdtraj
 tqdm
 sphinx
 sphinx_rtd_theme

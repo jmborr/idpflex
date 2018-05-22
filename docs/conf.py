@@ -294,6 +294,7 @@ intersphinx_mapping = {
     'lmfit': ('https://lmfit.github.io/lmfit-py', None),
     'matplotlib': ('https://matplotlib.org', None),
     'MDAnalysis': ('https://www.mdanalysis.org/docs', None),
+    'mdtraj': ('http://mdtraj.org/latest', None),
     'numpy': ('http://docs.scipy.org/doc/numpy', None),
     'python': ('https://docs.python.org/{}'.format(sys.version_info[0]), None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
