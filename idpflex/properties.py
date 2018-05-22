@@ -244,7 +244,7 @@ class EndToEndMixin(object):
 class EndToEnd(ScalarProperty, EndToEndMixin):
     r"""Implementation of a node property to store the end-to-end distance
 
-    See :class:`~idpflex.properties.ScalarProperty for initialization
+    See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
 
     def __init__(self, *args, **kwargs):
@@ -311,7 +311,7 @@ class RadiusOfGyrationMixin(object):
 class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
     r"""Implementation of a node property to store the radius of gyration.
 
-    See :class:`~idpflex.properties.ScalarProperty for initialization
+    See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
 
     def __init__(self, *args, **kwargs):
