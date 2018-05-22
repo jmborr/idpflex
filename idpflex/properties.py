@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter, MaxNLocator, AutoMinorLocator
 from matplotlib.colors import ListedColormap
 import MDAnalysis as mda
+import mdtraj
 from MDAnalysis.analysis.distances import contact_matrix
 
 
@@ -190,6 +191,80 @@ class ScalarProperty(object):
         return ax
 
 
+class SaSaMixin(object):
+    r"""Mixin class providing a set of methods to load and calculate the
+    solvent accessible surface area"""
+
+    def from_mdtraj(self, a_traj, probe_radius=0.14, **kwargs):
+        r"""Calculate solvent accessible surface for frames in a trajectory
+
+        Parameters
+        ----------
+        a_traj: :class:`~mdtraj.core.Trajectory`
+            mdtraj trajectory object
+        probe_radius: float
+            The radius of the probe, in nm
+        kwargs: dict
+            Optional arguments for mdtraj.shrake_rupley doing the calculation
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.SaSa`
+            Instantiated SaSa property object
+        """
+        self.y = mdtraj.shrake_rupley(a_traj,
+                                      probe_radius=probe_radius).sum(axis=1)[0]
+        return self
+
+    def from_pdb(self, filename, selection=None):
+        r"""Calculate solvent accessible surface area (SASA) from a PDB file
+
+        If the PBD contains more than one structure, calculation is performed
+        only for the first one
+
+        Parameters
+        ----------
+        filename: str
+            Path to the PDB file
+        selection: str
+            Atomic selection for calculating SASA. All atoms considered if
+            default None is passed.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.SaSa`
+            Instantiated SaSa property object
+        """
+        self.selection = selection
+        a_traj = mdtraj.load_pdb(filename)
+        if selection is not None:
+            selection = a_traj.top.select(selection)  # atomic indices
+            a_traj = mdtraj.load_pdb(filename, atom_indices=selection)
+        return self.from_mdtraj(a_traj)
+
+
+class SaSa(ScalarProperty, SaSaMixin):
+    r"""Implementation of a node property to calculate the Solvent Accessible
+    Surface Area.
+
+    See :class:`~idpflex.properties.ScalarProperty` for initialization
+    """
+
+    def __init__(self, *args, **kwargs):
+        ScalarProperty.__init__(self, *args, **kwargs)
+        if self.name is None:
+            self.name = 'sasa'  # Default name
+
+    @property
+    def sasa(self):
+        r"""Property to read and write the radius of gyration value"""
+        return self.y
+
+    @sasa.setter
+    def sasa(self, value):
+        self.y = value
+
+
 class EndToEndMixin(object):
     r"""Mixin class providing a set of methods to load and calculate
     the end-to-end distance for a protein"""
@@ -296,13 +371,13 @@ class RadiusOfGyrationMixin(object):
         filename: str
             path to the PDB file
         selection: str
-            Atomic selection for calculating Rg. All atoms considered if None
-            is passed
+            Atomic selection for calculating Rg. All atoms considered if
+            default None is passed
 
         Returns
         -------
         self: :class:`~idpflex.properties.RadiusOfGyration`
-            Instantiated RadiusOfGyration object
+            Instantiated RadiusOfGyration property object
         """
         return self.from_universe(mda.Universe(filename), selection)
 
