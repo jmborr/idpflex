@@ -3,6 +3,8 @@ scipy
 six
 h5py
 lmfit
+pandas
+mdtraj
 MDAnalysis
 tqdm
 sphinx
