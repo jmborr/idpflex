@@ -202,7 +202,7 @@ class SaSaMixin(object):
 
         Parameters
         ----------
-        a_traj: :class:`~mdtraj.core.Trajectory`
+        a_traj: :class:`~mdtraj.Trajectory`
             mdtraj trajectory object
         probe_radius: float
             The radius of the probe, in Angstroms
@@ -265,7 +265,7 @@ class SaSa(ScalarProperty, SaSaMixin):
 
     @property
     def sasa(self):
-        r"""Property to read and write the radius of gyration value"""
+        r"""Property to read and write the SASA value"""
         return self.y
 
     @sasa.setter
