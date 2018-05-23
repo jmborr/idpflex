@@ -214,9 +214,9 @@ class SaSaMixin(object):
         self: :class:`~idpflex.properties.SaSa`
             Instantiated SaSa property object
         """
-        self.y = 100* mdtraj.shrake_rupley(a_traj,
-                                           probe_radius=probe_radius/10.0,
-                                           **kwargs).sum(axis=1)[0]
+        self.y = 100 * mdtraj.shrake_rupley(a_traj,
+                                            probe_radius=probe_radius/10.0,
+                                            **kwargs).sum(axis=1)[0]
         return self
 
     def from_pdb(self, filename, selection=None, probe_radius=1.4, **kwargs):
