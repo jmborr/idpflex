@@ -195,15 +195,17 @@ class SaSaMixin(object):
     r"""Mixin class providing a set of methods to load and calculate the
     solvent accessible surface area"""
 
-    def from_mdtraj(self, a_traj, probe_radius=0.14, **kwargs):
+    def from_mdtraj(self, a_traj, probe_radius=1.4, **kwargs):
         r"""Calculate solvent accessible surface for frames in a trajectory
+
+        SASA units are Angstroms squared
 
         Parameters
         ----------
         a_traj: :class:`~mdtraj.core.Trajectory`
             mdtraj trajectory object
         probe_radius: float
-            The radius of the probe, in nm
+            The radius of the probe, in Angstroms
         kwargs: dict
             Optional arguments for mdtraj.shrake_rupley doing the calculation
 
@@ -212,16 +214,17 @@ class SaSaMixin(object):
         self: :class:`~idpflex.properties.SaSa`
             Instantiated SaSa property object
         """
-        self.y = mdtraj.shrake_rupley(a_traj,
-                                      probe_radius=probe_radius,
-                                      **kwargs).sum(axis=1)[0]
+        self.y = 100* mdtraj.shrake_rupley(a_traj,
+                                           probe_radius=probe_radius/10.0,
+                                           **kwargs).sum(axis=1)[0]
         return self
 
-    def from_pdb(self, filename, selection=None, probe_radius=0.14, **kwargs):
+    def from_pdb(self, filename, selection=None, probe_radius=1.4, **kwargs):
         r"""Calculate solvent accessible surface area (SASA) from a PDB file
 
         If the PBD contains more than one structure, calculation is performed
-        only for the first one
+        only for the first one.
+        SASA units are Angstroms squared
 
         Parameters
         ----------
@@ -231,7 +234,7 @@ class SaSaMixin(object):
             Atomic selection for calculating SASA. All atoms considered if
             default None is passed.
         probe_radius: float
-            The radius of the probe, in nm
+            The radius of the probe, in Angstroms
         kwargs: dict
             Optional arguments for mdtraj.shrake_rupley doing the calculation
 
