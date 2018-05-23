@@ -83,11 +83,11 @@ class TestSaSa(object):
     def test_from_pdb(self, ss_benchmark):
         filename = ss_benchmark['pdb_file']
         prop = ps.SaSa().from_pdb(filename)
-        np.testing.assert_allclose(prop.sasa, 2964, rtol=0.1)
+        np.testing.assert_allclose(prop.sasa, 2964, rtol=0.10)
         prop = ps.SaSa().from_pdb(filename, n_sphere_points=3)
-        np.testing.assert_allclose(prop.sasa, 2989, rtol=0.1)
+        np.testing.assert_allclose(prop.sasa, 2989, rtol=0.10)
         prop = ps.SaSa().from_pdb(filename, selection='resid 0 to 10')
-        np.testing.assert_allclose(prop.sasa, 1350, rtol=0.1)
+        np.testing.assert_allclose(prop.sasa, 1350, rtol=0.16)
 
 
 class TestRadiusOfGyration(object):
