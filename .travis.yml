@@ -27,7 +27,7 @@ install:
   - source activate testenv
   - pip install numpy --upgrade --ignore-installed
   - pip install cython --upgrade --ignore-installed
-  - pip install future six mdtraj h5py lmfit MDAnalysis tqdm sphinx sphinx_rtd_theme matplotlib codecov
+  - pip install future six pandas mdtraj h5py lmfit MDAnalysis tqdm sphinx sphinx_rtd_theme matplotlib codecov
 
 # Set display for tests involving matplotlib
 before_script: # configure a headless display to test plot generation

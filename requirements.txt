@@ -3,8 +3,9 @@ scipy
 six
 h5py
 lmfit
-MDAnalysis
+pandas
 mdtraj
+MDAnalysis
 tqdm
 sphinx
 sphinx_rtd_theme

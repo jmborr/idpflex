@@ -9,8 +9,8 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'future', 'scipy', 'numpy', 'six', 'h5py', 'lmfit', 'MDAnalysis', 'mdtraj',
-    'tqdm', 'nglview', 'pathos'
+    'future', 'scipy', 'numpy', 'six', 'pandas', 'h5py', 'matplotlib',
+    'lmfit', 'mdtraj', 'MDAnalysis', 'tqdm', 'nglview', 'pathos'
     # TODO: put package requirements here
 ]
 
