@@ -83,9 +83,11 @@ class TestSaSa(object):
     def test_from_pdb(self, ss_benchmark):
         filename = ss_benchmark['pdb_file']
         prop = ps.SaSa().from_pdb(filename)
-        np.testing.assert_almost_equal(prop.sasa, 9.244, decimal=3)
-
-
+        np.testing.assert_almost_equal(prop.sasa, 29.6, decimal=1)
+        prop = ps.SaSa().from_pdb(filename, n_sphere_points=3)
+        np.testing.assert_almost_equal(prop.sasa, 29.8, decimal=1)
+        prop = ps.SaSa().from_pdb(filename, selection='resid 0 to 10')
+        np.testing.assert_almost_equal(prop.sasa, 13.5, decimal=1)
 
 
 class TestRadiusOfGyration(object):

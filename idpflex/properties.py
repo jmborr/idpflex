@@ -213,10 +213,11 @@ class SaSaMixin(object):
             Instantiated SaSa property object
         """
         self.y = mdtraj.shrake_rupley(a_traj,
-                                      probe_radius=probe_radius).sum(axis=1)[0]
+                                      probe_radius=probe_radius,
+                                      **kwargs).sum(axis=1)[0]
         return self
 
-    def from_pdb(self, filename, selection=None):
+    def from_pdb(self, filename, selection=None, probe_radius=0.14, **kwargs):
         r"""Calculate solvent accessible surface area (SASA) from a PDB file
 
         If the PBD contains more than one structure, calculation is performed
@@ -229,6 +230,10 @@ class SaSaMixin(object):
         selection: str
             Atomic selection for calculating SASA. All atoms considered if
             default None is passed.
+        probe_radius: float
+            The radius of the probe, in nm
+        kwargs: dict
+            Optional arguments for mdtraj.shrake_rupley doing the calculation
 
         Returns
         -------
@@ -240,7 +245,7 @@ class SaSaMixin(object):
         if selection is not None:
             selection = a_traj.top.select(selection)  # atomic indices
             a_traj = mdtraj.load_pdb(filename, atom_indices=selection)
-        return self.from_mdtraj(a_traj)
+        return self.from_mdtraj(a_traj, probe_radius=probe_radius, **kwargs)
 
 
 class SaSa(ScalarProperty, SaSaMixin):
