@@ -4,6 +4,7 @@ Description of work.
 - [ ] Unit tests
 - [ ] Update HISTORY file
 - [ ] Documentation
+- [ ] example in notebook
 
 **To test:**
 
