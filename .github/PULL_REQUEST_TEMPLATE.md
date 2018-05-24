@@ -1,5 +1,10 @@
 Description of work.
 
+- [ ] Source
+- [ ] Unit tests
+- [ ] Update HISTORY file
+- [ ] Documentation
+
 **To test:**
 
 <!-- Instructions for testing. -->
