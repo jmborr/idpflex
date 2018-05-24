@@ -262,6 +262,8 @@ class Asphericity(ScalarProperty, AsphericityMixin):
 
     where :math:`L_i` are the eigenvalues of the gyration tensor.
 
+    Reference: https://pubs.acs.org/doi/pdf/10.1021/ja206839u
+
     Does not apply periodic boundary conditions
 
     See :class:`~idpflex.properties.ScalarProperty` for initialization
