@@ -199,8 +199,10 @@ class AsphericityMixin(object):
     def from_universe(self, a_universe, selection=None):
         r"""Calculate asphericity from an MDAnalysis universe instance
 
-        :math:`\frac{(L_1-L_2)^2+L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
-        where :math:`L_i` are the eigenvalues of the gyration tensor
+        :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+
+        where :math:`L_i` are the eigenvalues of the gyration tensor.
+
         Does not apply periodic boundary conditions
 
         Parameters
@@ -229,8 +231,10 @@ class AsphericityMixin(object):
     def from_pdb(self, filename, selection=None):
         r"""Calculate asphericity from a PDB file
 
-        :math:`\frac{(L_1-L_2)^2+L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+        :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+
         where :math:`L_i` are the eigenvalues of the gyration tensor.
+
         Does not apply periodic boundary conditions
 
 
@@ -251,7 +255,14 @@ class AsphericityMixin(object):
 
 
 class Asphericity(ScalarProperty, AsphericityMixin):
-    r"""Implementation of a node property to store the asphericity distance
+    r"""Implementation of a node property to store the asphericity from the
+    gyration radius tensor
+
+    :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+
+    where :math:`L_i` are the eigenvalues of the gyration tensor.
+
+    Does not apply periodic boundary conditions
 
     See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
@@ -267,7 +278,7 @@ class Asphericity(ScalarProperty, AsphericityMixin):
         return self.y
 
     @asphericity.setter
-    def end_to_end(self, value):
+    def asphericity(self, value):
         self.y = value
 
 
