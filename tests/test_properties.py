@@ -70,6 +70,14 @@ class TestScalarProperty(object):
         assert ax.patches[0]._height == benchmark['nleafs']
 
 
+class TestAsphericity(object):
+
+    def test_from_pdb(self, ss_benchmark):
+        filename = ss_benchmark['pdb_file']
+        prop = ps.Asphericity().from_pdb(filename)
+        np.testing.assert_almost_equal(prop.asphericity, 0.71, decimal=2)
+
+
 class TestEndToEnd(object):
 
     def test_from_pdb(self, ss_benchmark):

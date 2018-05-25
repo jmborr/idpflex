@@ -4,6 +4,7 @@ History
 
 0.1.6 (TBA)
 ------------------
+* Added Asphericity property (PR #65)
 * Added SASA property (PR #64)
 * Added end-to-end property (PR #59)
 * plot histogram for ScalarProperty (PR #56)

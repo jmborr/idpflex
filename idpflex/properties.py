@@ -191,6 +191,101 @@ class ScalarProperty(object):
         return ax
 
 
+class AsphericityMixin(object):
+    r"""Mixin class providing a set of methods to calculate the asphericity
+    from the gyration radius tensor"""
+
+    def from_universe(self, a_universe, selection=None):
+        r"""Calculate asphericity from an MDAnalysis universe instance
+
+        :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+
+        where :math:`L_i` are the eigenvalues of the gyration tensor. Units
+        are same as units of a_universe.
+
+        Does not apply periodic boundary conditions
+
+        Parameters
+        ----------
+        a_universe: :class:`~MDAnalysis.core.universe.Universe`
+            Universe instance describing the configuration
+        selection: str
+            Atomic selection. All atoms considered if None is passed
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.Asphericity`
+            Instantiated Asphericity object
+        """
+        if selection is None:
+            self.selection = a_universe.atoms
+        else:
+            self.selection = a_universe.select_atoms(selection)
+        r = self.selection.positions - self.selection.centroid()
+        gyr = np.einsum("ij,ik", r, r) / len(self.selection)  # gyration tensor
+        eval, evec = np.linalg.eig(gyr)  # diagonalize
+        self.y = np.sum(np.square(np.subtract.outer(eval, eval))) / \
+            np.square(np.sum(eval))
+        return self
+
+    def from_pdb(self, filename, selection=None):
+        r"""Calculate asphericity from a PDB file
+
+        :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+
+        where :math:`L_i` are the eigenvalues of the gyration tensor. Units
+        are same as units of a_universe.
+
+        Does not apply periodic boundary conditions
+
+
+        Parameters
+        ----------
+        filename: str
+            path to the PDB file
+        selection: str
+            Atomic selection. The first and last atoms of the selection are
+            considered for the calculation of the end-to-end distance.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.Asphericity`
+            Instantiated Asphericity object
+        """
+        return self.from_universe(mda.Universe(filename), selection)
+
+
+class Asphericity(ScalarProperty, AsphericityMixin):
+    r"""Implementation of a node property to store the asphericity from the
+    gyration radius tensor
+
+    :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
+
+    where :math:`L_i` are the eigenvalues of the gyration tensor. Units
+    are same as units of a_universe.
+
+    Reference: https://pubs.acs.org/doi/pdf/10.1021/ja206839u
+
+    Does not apply periodic boundary conditions
+
+    See :class:`~idpflex.properties.ScalarProperty` for initialization
+    """
+
+    def __init__(self, *args, **kwargs):
+        ScalarProperty.__init__(self, *args, **kwargs)
+        if self.name is None:
+            self.name = 'asphericity'
+
+    @property
+    def asphericity(self):
+        r"""Property to read and set the end-to-end distance"""
+        return self.y
+
+    @asphericity.setter
+    def asphericity(self, value):
+        self.y = value
+
+
 class SaSaMixin(object):
     r"""Mixin class providing a set of methods to load and calculate the
     solvent accessible surface area"""
