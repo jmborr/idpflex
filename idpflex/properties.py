@@ -1,7 +1,6 @@
 from __future__ import print_function, absolute_import
 
 import os
-import itertools
 from six.moves import zip
 import subprocess
 import tempfile
@@ -225,7 +224,7 @@ class AsphericityMixin(object):
         gyr = np.einsum("ij,ik", r, r) / len(self.selection)  # gyration tensor
         eval, evec = np.linalg.eig(gyr)  # diagonalize
         self.y = np.sum(np.square(np.subtract.outer(eval, eval))) / \
-                 np.square(np.sum(eval))
+            np.square(np.sum(eval))
         return self
 
     def from_pdb(self, filename, selection=None):
