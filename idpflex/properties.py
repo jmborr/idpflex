@@ -200,7 +200,8 @@ class AsphericityMixin(object):
 
         :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
 
-        where :math:`L_i` are the eigenvalues of the gyration tensor.
+        where :math:`L_i` are the eigenvalues of the gyration tensor. Units
+        are same as units of a_universe.
 
         Does not apply periodic boundary conditions
 
@@ -232,7 +233,8 @@ class AsphericityMixin(object):
 
         :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
 
-        where :math:`L_i` are the eigenvalues of the gyration tensor.
+        where :math:`L_i` are the eigenvalues of the gyration tensor. Units
+        are same as units of a_universe.
 
         Does not apply periodic boundary conditions
 
@@ -259,7 +261,8 @@ class Asphericity(ScalarProperty, AsphericityMixin):
 
     :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
 
-    where :math:`L_i` are the eigenvalues of the gyration tensor.
+    where :math:`L_i` are the eigenvalues of the gyration tensor. Units
+    are same as units of a_universe.
 
     Reference: https://pubs.acs.org/doi/pdf/10.1021/ja206839u
 
