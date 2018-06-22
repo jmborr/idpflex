@@ -16,6 +16,7 @@ from matplotlib.colors import ListedColormap
 import MDAnalysis as mda
 import mdtraj
 from MDAnalysis.analysis.distances import contact_matrix
+from idpflex import utils as iutl
 
 
 def register_as_node_property(cls, nxye):
@@ -195,7 +196,7 @@ class AsphericityMixin(object):
     r"""Mixin class providing a set of methods to calculate the asphericity
     from the gyration radius tensor"""
 
-    def from_universe(self, a_universe, selection=None):
+    def from_universe(self, a_universe, selection=None, index=0):
         r"""Calculate asphericity from an MDAnalysis universe instance
 
         :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
@@ -221,6 +222,7 @@ class AsphericityMixin(object):
             self.selection = a_universe.atoms
         else:
             self.selection = a_universe.select_atoms(selection)
+        a_universe.trajectory[index]  # jump to frame
         r = self.selection.positions - self.selection.centroid()
         gyr = np.einsum("ij,ik", r, r) / len(self.selection)  # gyration tensor
         eval, evec = np.linalg.eig(gyr)  # diagonalize
@@ -271,10 +273,12 @@ class Asphericity(ScalarProperty, AsphericityMixin):
     See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
 
+    default_name = 'asphericity'
+
     def __init__(self, *args, **kwargs):
         ScalarProperty.__init__(self, *args, **kwargs)
         if self.name is None:
-            self.name = 'asphericity'
+            self.name = Asphericity.default_name
 
     @property
     def asphericity(self):
@@ -345,6 +349,38 @@ class SaSaMixin(object):
             a_traj = mdtraj.load_pdb(filename, atom_indices=selection)
         return self.from_mdtraj(a_traj, probe_radius=probe_radius, **kwargs)
 
+    def from_universe(self, a_universe, selection=None, probe_radius=1.4,
+                      index=0, **kwargs):
+        r"""Calculate solvent accessible surface area (SASA) from
+        an MDAnalysis universe instance.
+
+        This method is a thin wrapper around method `from_pdb()`
+
+        Parameters
+        ----------
+        filename: str
+            Path to the PDB file
+        selection: str
+            Atomic selection for calculating SASA. All atoms considered if
+            default None is passed.
+        probe_radius: float
+            The radius of the probe, in Angstroms
+        kwargs: dict
+            Optional arguments for underlying mdtraj.shrake_rupley doing
+            the actual SASA calculation.
+
+        Returns
+        -------
+        self: :class:`~idpflex.properties.SaSa`
+            Instantiated SaSa property object
+        """
+        with iutl.temporary_file(suffix='.pdb') as filename:
+            a_universe.trajectory[index]  # jump to frame
+            a_universe.atoms.write(filename)
+            sasa = self.from_pdb(filename, selection=selection,
+                                 probe_radius=probe_radius, **kwargs)
+        return sasa
+
 
 class SaSa(ScalarProperty, SaSaMixin):
     r"""Implementation of a node property to calculate the Solvent Accessible
@@ -353,10 +389,12 @@ class SaSa(ScalarProperty, SaSaMixin):
     See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
 
+    default_name = 'sasa'
+
     def __init__(self, *args, **kwargs):
         ScalarProperty.__init__(self, *args, **kwargs)
         if self.name is None:
-            self.name = 'sasa'  # Default name
+            self.name = SaSa.default_name
 
     @property
     def sasa(self):
@@ -372,7 +410,7 @@ class EndToEndMixin(object):
     r"""Mixin class providing a set of methods to load and calculate
     the end-to-end distance for a protein"""
 
-    def from_universe(self, a_universe, selection='name CA'):
+    def from_universe(self, a_universe, selection='name CA', index=0):
         r"""Calculate radius of gyration from an MDAnalysis Universe instance
 
         Does not apply periodic boundary conditions
@@ -392,6 +430,7 @@ class EndToEndMixin(object):
         """
         selection = a_universe.select_atoms(selection)
         self.pair = (selection[0], selection[-1])
+        a_universe.trajectory[index]  # jump to frame
         r = self.pair[0].position - self.pair[1].position
         self.y = np.linalg.norm(r)
         return self
@@ -424,10 +463,12 @@ class EndToEnd(ScalarProperty, EndToEndMixin):
     See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
 
+    default_name = 'end_to_end'
+
     def __init__(self, *args, **kwargs):
         ScalarProperty.__init__(self, *args, **kwargs)
         if self.name is None:
-            self.name = 'end_to_end'
+            self.name = EndToEnd.default_name
 
     @property
     def end_to_end(self):
@@ -444,7 +485,7 @@ class RadiusOfGyrationMixin(object):
     data into a Scalar property
     """
 
-    def from_universe(self, a_universe, selection=None):
+    def from_universe(self, a_universe, selection=None, index=0):
         r"""Calculate radius of gyration from an MDAnalysis Universe instance
 
         Parameters
@@ -463,6 +504,7 @@ class RadiusOfGyrationMixin(object):
             self.selection = a_universe.atoms
         else:
             self.selection = a_universe.select_atoms(selection)
+        a_universe.trajectory[index]  # jump to frame
         self.y = self.selection.atoms.radius_of_gyration()
         return self
 
@@ -491,10 +533,12 @@ class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
     See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
 
+    default_name = 'rg'
+
     def __init__(self, *args, **kwargs):
         ScalarProperty.__init__(self, *args, **kwargs)
         if self.name is None:
-            self.name = 'rg'  # Default name
+            self.name = RadiusOfGyration.default_name
 
     @property
     def rg(self):
@@ -529,15 +573,18 @@ class ResidueContactMap(object):
         Cut-off distance defining a contact between two atoms
     """
 
-    def __init__(self, name='cm', selection=None, cmap=None, errors=None,
+    default_name = 'cm'
+
+    def __init__(self, name=None, selection=None, cmap=None, errors=None,
                  cutoff=None):
-        self.name = name
+        if name is None:
+            self.name = ResidueContactMap.default_name
         self.selection = selection
         self.cmap = cmap
         self.errors = errors
         self.cutoff = cutoff
 
-    def from_universe(self, a_universe, cutoff, selection=None):
+    def from_universe(self, a_universe, cutoff, selection=None, index=0):
         r"""Calculate residue contact map from an MDAnalysis Universe instance
 
         Parameters
@@ -560,6 +607,7 @@ class ResidueContactMap(object):
         else:
             self.selection = a_universe.select_atoms(selection)
         n_atoms = len(self.selection)
+        a_universe.trajectory[index]  # jump to frame
         cm = contact_matrix(self.selection.positions, cutoff=cutoff)
         # Cast the atomic map into a residue based map
         resids = self.selection.resids
@@ -706,8 +754,11 @@ class SecondaryStructureProperty(object):
         v[cls.dssp_codes.find(code)] = 1.0
         return v
 
-    def __init__(self, name='ss', aa=None, profile=None, errors=None):
-        self.name = name
+    default_name = 'ss'
+
+    def __init__(self, name=None, aa=None, profile=None, errors=None):
+        if name is None:
+            self.name = SecondaryStructureProperty.default_name
         self.aa = aa
         self.profile = profile
         self.errors = errors
@@ -946,6 +997,8 @@ class ProfileProperty(object):
         Errors in the intensity values
     """
 
+    default_name = 'profile'
+
     def __init__(self, name=None, qvalues=None, profile=None, errors=None):
         self.name = name
         self.qvalues = qvalues
@@ -993,10 +1046,13 @@ class SansLoaderMixin(object):
 class SansProperty(ProfileProperty, SansLoaderMixin):
     r"""Implementation of a node property for SANS data
     """
+
+    default_name = 'sans'
+
     def __init__(self, *args, **kwargs):
         ProfileProperty.__init__(self, *args, **kwargs)
         if self.name is None:
-            self.name = 'sans'  # Default name
+            self.name = SansProperty.default_name
 
 
 class SaxsLoaderMixin(object):
@@ -1128,10 +1184,13 @@ class SaxsLoaderMixin(object):
 class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
     r"""Implementation of a node property for SAXS data
     """
+
+    default_name = 'saxs'
+
     def __init__(self, *args, **kwargs):
         ProfileProperty.__init__(self, *args, **kwargs)
         if self.name is None:
-            self.name = 'saxs'   # Default name
+            self.name = SaxsProperty.default_name
 
 
 def propagator_weighted_sum(values, tree,
