@@ -73,7 +73,7 @@ def trajectory_centroids(a_universe, selection='not name H*',
 
     Returns
     -------
-    list
+    rep_ifr : list
         Frame indexes of representative structures (centroids)
     """
     group = a_universe.select_atoms(selection)

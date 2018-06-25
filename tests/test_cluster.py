@@ -23,7 +23,9 @@ def test_cluster_with_properties(trajectory_benchmark):
                                            selection='name CA',
                                            segment_length=100,
                                            n_representatives=9)
-    default_names = ['sasa', 'rg', 'end-to-end', 'asphericity']
+    default_names = set(['sasa', 'rg', 'end-to-end', 'asphericity'])
+    property_names = set(results.tree.root.properties.keys())
+    assert property_names.issuperset(default_names) is True
     assert_almost_equal(results.rmsd[0:3], (3.4, 1.9, 3.0), decimal=0.1)
     leaf = results.tree.root.representative(results.rmsd)
     assert leaf['iframe'].y == 942
