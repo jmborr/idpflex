@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import tempfile
 import MDAnalysis as mda
 
+
 def write_frame(a_universe, iframe, file_name):
     r"""Write a single trajectory frame to file.
 

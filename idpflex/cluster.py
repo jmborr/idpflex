@@ -16,6 +16,7 @@ from idpflex.distances import (rmsd_matrix, extract_coordinates)
 from idpflex.cnextend import Tree
 from idpflex.properties import ScalarProperty, propagator_size_weighted_sum
 
+
 class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
     r"""A namedtuple with a `keys()` method for easy access of
     fields, described below under header `Parameters`
@@ -163,7 +164,7 @@ def cluster_with_properties(a_universe, pcls, p_names=None,
     for i_prop, prop in enumerate(l_prop):
         xyz[i_prop] = [p.y for p in prop]
     # zero mean and unity variance for each property
-    xyz = np.transpose(zscore(xyz,axis=1))
+    xyz = np.transpose(zscore(xyz, axis=1))
     distance_matrix = squareform(scipy.spatial.distance_matrix(xyz, xyz))
 
     # Cluster the representative structures

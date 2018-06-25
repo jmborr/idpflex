@@ -756,7 +756,8 @@ class SecondaryStructureProperty(object):
     default_name = 'ss'
 
     def __init__(self, name=None, aa=None, profile=None, errors=None):
-        self.name = SecondaryStructureProperty.default_name if name is None else name
+        self.name = SecondaryStructureProperty.default_name \
+            if name is None else name
         self.aa = aa
         self.profile = profile
         self.errors = errors
