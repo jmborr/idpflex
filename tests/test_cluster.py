@@ -24,7 +24,7 @@ def test_cluster_with_properties(trajectory_benchmark):
                                            segment_length=100,
                                            n_representatives=9)
     default_names = set(['sasa', 'rg', 'end-to-end', 'asphericity'])
-    property_names = set(results.tree.root.properties.keys())
+    property_names = set(results.tree.root._properties.keys())
     assert property_names.issuperset(default_names) is True
     assert_almost_equal(results.rmsd[0:3], (3.4, 1.9, 3.0), decimal=0.1)
     leaf = results.tree.root.representative(results.rmsd)
