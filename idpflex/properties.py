@@ -575,9 +575,9 @@ class ResidueContactMap(object):
 
     default_name = 'cm'
 
-    def __init__(self, name=ResidueContactMap.default_name, selection=None, cmap=None, errors=None,
+    def __init__(self, name=None, selection=None, cmap=None, errors=None,
                  cutoff=None):
-        self.name = name
+        self.name = ResidueContactMap.default_name if name is None else name
         self.selection = selection
         self.cmap = cmap
         self.errors = errors
@@ -755,8 +755,8 @@ class SecondaryStructureProperty(object):
 
     default_name = 'ss'
 
-    def __init__(self, name=SecondaryStructureProperty.default_name, aa=None, profile=None, errors=None):
-        self.name = name
+    def __init__(self, name=None, aa=None, profile=None, errors=None):
+        self.name = SecondaryStructureProperty.default_name if name is None else name
         self.aa = aa
         self.profile = profile
         self.errors = errors
