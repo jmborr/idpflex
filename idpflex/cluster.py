@@ -19,7 +19,7 @@ from idpflex.properties import ScalarProperty, propagator_size_weighted_sum
 
 class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
     r"""A namedtuple with a `keys()` method for easy access of
-    fields, described below under header `Parameters`
+    fields, which are described below under header `Parameters`
 
     Parameters
     ----------
@@ -28,9 +28,10 @@ class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
     rmsd : :class:`~numpy:numpy.ndarray`
         distance matrix between representative structures.
     tree : :class:`~idpflex.cnextend.Tree`
-        Clustering of representative structures. Leaf nodes contain property
-        `iframe` containing the frame index of the corresponding representative
-        structure.
+        Clustering of representative structures. Leaf nodes associated with
+        each centroid contain property `iframe`, which is the frame index
+        in the trajectory pointing to the atomic structure corresponding to
+        the centroid.
     """
 
     def keys(self):
@@ -51,26 +52,26 @@ class ClusterTrove(namedtuple('ClusterTrove', 'idx rmsd tree')):
 
 def trajectory_centroids(a_universe, selection='not name H*',
                          segment_length=1000, n_representatives=1000):
-    r"""Cluster a trajectory into a set of representative structures using
-    structural similarity (RMSD)
+    r"""Cluster a set of consecutive trajectory segments into a set
+    of representative structures via structural similarity (RMSD)
 
-    The simulated trajectory is divided into segments, and hierarchical
-    clustering is performed on each segment to yield a limited number of
-    representative structures.
-
-    Frame indexes from each segment are collected as cluster representatives.
+    The simulated trajectory is divided into consecutive segments, and
+    hierarchical clustering is performed on each segment to yield a
+    limited number of representative structures (centroids) per segment.
 
     Parameters
     ----------
     a_universe : :class:`~MDAnalysis.core.universe.Universe`
         Topology and trajectory.
     selection : str
-        atoms for which to calculate RMSD
+        atoms for which to calculate RMSD. See the
+        `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+        for atom selection syntax.
     segment_length: int
-        divide trajectory into chunks of this length
+        divide trajectory into segments of this length
     n_representatives : int
-        Target total number of representative structures. The final number
-        may be close but not equal to the target number.
+        Desired total number of representative structures. The final number
+        may be close but not equal to the desired number.
 
     Returns
     -------
@@ -115,12 +116,17 @@ def cluster_with_properties(a_universe, pcls, p_names=None,
     clustering is performed on each segment to yield a limited number of
     representative structures (the centroids). Properties are calculated
     for each centroid, thus each centroid is described by a property
-    vector. The dimensionality of the vector is just the number of
-    properties. Distances between centroids are calculated
-    as the Euclidean distance between their respective vector properties.
+    vector. The dimensionality of the vector is related to the number of
+    properties and the dimensionality of each property.
+    The distances between any two centroids is calculated as the
+    Euclidean distance between their respective vector properties.
+    The distance matrix containing distances between all possible
+    centroid pairs is employed as the similarity measure to generate
+    the hierarchical tree of centroids.
 
-    The calculated properties are stored in the leafs of the clustering tree
-    and the propagated up to the tree's root.
+    The properties calculated for the centroids are stored in the
+    leaf nodes of the hierarchical tree. Properties are then propagated
+    up to the tree's root node.
 
     Parameters
     ----------
@@ -130,19 +136,21 @@ def cluster_with_properties(a_universe, pcls, p_names=None,
         Property classes, such as :class:`~idpflex.properties.Asphericity`
         of :class:`~idpflex.properties.SaSa`
     p_names : list
-        Names for each property. If None, then property default names are used
+        Property names. If None, then default property names are used
     selection : str
-        atoms for which to calculate RMSD
+        atoms for which to calculate RMSD. See the
+        `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+        for atom selection syntax.
     segment_length: int
-        divide trajectory into chunks of this length
+        divide trajectory into segments of this length
     n_representatives : int
-        Target total number of representative structures. The final number
-        may be close but not equal to the target number.
+        Desired total number of representative structures. The final number
+        may be close but not equal to the desired number.
 
     Returns
     -------
     :class:`~idpflex.cluster.ClusterTrove`
-        clustering results for the representatives
+        Hierarchical clustering tree of the centroids
     """
     rep_ifr = trajectory_centroids(a_universe, selection=selection,
                                    segment_length=segment_length,
@@ -186,21 +194,21 @@ def cluster_trajectory(a_universe, selection='not name H*',
     The simulated trajectory is divided into segments, and hierarchical
     clustering is performed on each segment to yield a limited number of
     representative structures. These are then clustered into the final
-    hiearchical tree.
-
-    Frame indexes from each segment are collected as cluster representatives.
+    hierachical tree.
 
     Parameters
     ----------
     a_universe : :class:`~MDAnalysis.core.universe.Universe`
         Topology and trajectory.
     selection : str
-        atoms for which to calculate RMSD
+        atoms for which to calculate RMSD. See the
+        `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+        for atom selection syntax.
     segment_length: int
-        divide trajectory into chunks of this length
+        divide trajectory into segments of this length
     n_representatives : int
-        Target total number of representative structures. The final number
-        may be close but not equal to the target number.
+        Desired total number of representative structures. The final number
+        may be close but not equal to the desired number.
     distance_matrix: :class:`~numpy:numpy.ndarray`
 
     Returns
@@ -225,12 +233,14 @@ def cluster_trajectory(a_universe, selection='not name H*',
 
 
 def load_cluster_trove(filename):
-    r"""Load a previously saved ClusterTrove instance
+    r"""Load a previously saved
+     :class:`~idpflex.cluster.ClusterTrove` instance
 
     Parameters
     ----------
     filename: str
-        File name containing the serialized tree
+        File name containing the serialized
+        :class:`~idpflex.cluster.ClusterTrove`
 
     Returns
     -------

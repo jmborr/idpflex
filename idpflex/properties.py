@@ -166,10 +166,10 @@ class ScalarProperty(object):
         Parameters
         ----------
         kind : str
-            'histogram': Gater Rg for leafs under node associated to this
-            property, then make a histogram.
+            'histogram': Gather Rg for the leafs under the node associated
+            to this property, then make a histogram.
         errors : bool
-            estimate error from histogram counts
+            Estimate error from histogram counts
         kwargs : dict
             Additional arguments to underlying
             :meth:`~matplotlib.axes.Axes.hist`
@@ -209,15 +209,17 @@ class AsphericityMixin(object):
         Parameters
         ----------
         a_universe: :class:`~MDAnalysis.core.universe.Universe`
-            Universe instance describing the configuration
+            Trajectory or single-conformation instance
         selection: str
-            Atomic selection. All atoms considered if None is passed
+            Atomic selection. All atoms considered if None is passed. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.Asphericity`
             Instantiated Asphericity object
-        """
+        """  # noqa: E501
         if selection is None:
             self.selection = a_universe.atoms
         else:
@@ -246,14 +248,15 @@ class AsphericityMixin(object):
         filename: str
             path to the PDB file
         selection: str
-            Atomic selection. The first and last atoms of the selection are
-            considered for the calculation of the end-to-end distance.
+            Atomic selection. All atoms are considered if None is passed. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.Asphericity`
             Instantiated Asphericity object
-        """
+        """ # noqa: E501
         return self.from_universe(mda.Universe(filename), selection)
 
 
@@ -282,7 +285,7 @@ class Asphericity(ScalarProperty, AsphericityMixin):
 
     @property
     def asphericity(self):
-        r"""Property to read and set the end-to-end distance"""
+        r"""Property to read and set the asphericity"""
         return self.y
 
     @asphericity.setter
@@ -302,11 +305,12 @@ class SaSaMixin(object):
         Parameters
         ----------
         a_traj: :class:`~mdtraj.Trajectory`
-            mdtraj trajectory object
+            mdtraj trajectory instance
         probe_radius: float
             The radius of the probe, in Angstroms
         kwargs: dict
-            Optional arguments for mdtraj.shrake_rupley doing the calculation
+            Optional arguments for the underlying mdtraj.shrake_rupley
+            algorithm doing the actual SaSa calculation
 
         Returns
         -------
@@ -323,6 +327,7 @@ class SaSaMixin(object):
 
         If the PBD contains more than one structure, calculation is performed
         only for the first one.
+
         SASA units are Angstroms squared
 
         Parameters
@@ -331,17 +336,20 @@ class SaSaMixin(object):
             Path to the PDB file
         selection: str
             Atomic selection for calculating SASA. All atoms considered if
-            default None is passed.
+            default None is passed. See the
+        `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+        for atom selection syntax.
         probe_radius: float
             The radius of the probe, in Angstroms
         kwargs: dict
-            Optional arguments for mdtraj.shrake_rupley doing the calculation
+            Optional arguments for the underlying mdtraj.shrake_rupley
+             algorithm doing the actual SaSa calculation
 
         Returns
         -------
         self: :class:`~idpflex.properties.SaSa`
             Instantiated SaSa property object
-        """
+        """ # noqa: E501
         self.selection = selection
         a_traj = mdtraj.load_pdb(filename)
         if selection is not None:
@@ -358,11 +366,13 @@ class SaSaMixin(object):
 
         Parameters
         ----------
-        filename: str
-            Path to the PDB file
+        a_universe: :class:`~MDAnalysis.core.universe.Universe`
+            Trajectory or single-conformation instance
         selection: str
             Atomic selection for calculating SASA. All atoms considered if
-            default None is passed.
+            default None is passed. See the
+        `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+        for atom selection syntax.
         probe_radius: float
             The radius of the probe, in Angstroms
         kwargs: dict
@@ -373,7 +383,7 @@ class SaSaMixin(object):
         -------
         self: :class:`~idpflex.properties.SaSa`
             Instantiated SaSa property object
-        """
+        """ # noqa: E501
         with iutl.temporary_file(suffix='.pdb') as filename:
             a_universe.trajectory[index]  # jump to frame
             a_universe.atoms.write(filename)
@@ -418,16 +428,18 @@ class EndToEndMixin(object):
         Parameters
         ----------
         a_universe: :class:`~MDAnalysis.core.universe.Universe`
-            Universe instance describing the configuration
+            Trajectory or single-conformation instance
         selection: str
             Atomic selection. The first and last atoms of the selection are
-            considered for the calculation of the end-to-end distance.
+            considered for the calculation of the end-to-end distance. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.EndToEnd`
             Instantiated EndToEnd object
-        """
+        """ # noqa: E501
         selection = a_universe.select_atoms(selection)
         self.pair = (selection[0], selection[-1])
         a_universe.trajectory[index]  # jump to frame
@@ -447,13 +459,15 @@ class EndToEndMixin(object):
             path to the PDB file
         selection: str
             Atomic selection. The first and last atoms of the selection are
-            considered for the calculation of the end-to-end distance.
+            considered for the calculation of the end-to-end distance. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.EndToEnd`
             Instantiated EndToEnd object
-        """
+        """ # noqa: E501
         return self.from_universe(mda.Universe(filename), selection)
 
 
@@ -491,15 +505,17 @@ class RadiusOfGyrationMixin(object):
         Parameters
         ----------
         a_universe: :class:`~MDAnalysis.core.universe.Universe`
-            Universe instance describing the configuration
+            Trajectory, or single-conformation instance.
         selection: str
-            Atomic selection. All atoms considered if None is passed
+            Atomic selection. All atoms considered if None is passed. See the
+           `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.RadiusOfGyration`
             Instantiated RadiusOfGyration object
-        """
+        """ # noqa: E501
         if selection is None:
             self.selection = a_universe.atoms
         else:
@@ -517,13 +533,15 @@ class RadiusOfGyrationMixin(object):
             path to the PDB file
         selection: str
             Atomic selection for calculating Rg. All atoms considered if
-            default None is passed
+            default None is passed. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.RadiusOfGyration`
             Instantiated RadiusOfGyration property object
-        """
+        """ # noqa: E501
         return self.from_universe(mda.Universe(filename), selection)
 
 
@@ -564,14 +582,16 @@ class ResidueContactMap(object):
         Name of the contact map
     selection: :class:`~MDAnalysis.core.groups.AtomGroup`
         Atomic selection for calculation of the contact map, which is then
-        projected to a residue based map.
+        projected to a residue based map. See the
+        `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+        for atom selection syntax.
     cmap: :class:`~numpy:numpy.ndarray`
         Contact map between residues of the atomic selection
     errors: :class:`~numpy:numpy.ndarray`
         Underterminacies for every contact of cmap
     cutoff: float
         Cut-off distance defining a contact between two atoms
-    """
+    """ # noqa: E501
 
     default_name = 'cm'
 
@@ -589,18 +609,20 @@ class ResidueContactMap(object):
         Parameters
         ----------
         a_universe: :class:`~MDAnalysis.core.universe.Universe`
-            Universe instance describing the configuration
+            Trajectory or single-conformation instance
         cutoff: float
             Cut-off distance defining a contact between two atoms
         selection: str
             Atomic selection for calculating interatomic contacts. All atoms
-            are used if None is passed
+            are used if None is passed. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.ResidueContactMap`
             Instantiated ResidueContactMap object
-        """
+        """ # noqa: E501
         if selection is None:
             self.selection = a_universe.atoms
         else:
@@ -629,7 +651,7 @@ class ResidueContactMap(object):
         return self
 
     def from_pdb(self, filename, cutoff, selection=None):
-        r"""Calculate residue contact map from a PDB
+        r"""Calculate residue contact map from a PDB file
 
         Parameters
         ----------
@@ -639,13 +661,15 @@ class ResidueContactMap(object):
             Cut-off distance defining a contact between two atoms
         selection: str
             Atomic selection for calculating interatomic contacts. All atoms
-            are used if None is passed
+            are used if None is passed. See the
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            for atom selection syntax.
 
         Returns
         -------
         self: :class:`~idpflex.properties.ResidueContactMap`
             Instantiated ResidueContactMap object
-        """
+        """ # noqa: E501
         return self.from_universe(mda.Universe(filename), cutoff, selection)
 
     def plot(self):
@@ -681,7 +705,7 @@ class ResidueContactMap(object):
                             ('profile', '(:class:`~numpy:numpy.ndarray`) secondary structure assignment'),  # noqa: E501
                             ('errors', '(:class:`~numpy:numpy.ndarray`) assignment undeterminacy')))  # noqa: E501
 class SecondaryStructureProperty(object):
-    r"""Node property for secondary structure determined by dssp
+    r"""Node property for secondary structure determined by DSSP
 
     Every residue is assigned a vector of length 8. Indexes corresponds to
     different secondary structure assignment:
@@ -987,7 +1011,7 @@ class ProfileProperty(object):
     Parameters
     ----------
     name : str
-        Property name. We could have more than one sans profile
+        Property name.
     qvalues : :class:`~numpy:numpy.ndarray`
         Momentun transfer domain
     profile : :class:`~numpy:numpy.ndarray`
