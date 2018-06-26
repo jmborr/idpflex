@@ -77,7 +77,7 @@ def trajectory_centroids(a_universe, selection='not name H*',
     -------
     rep_ifr : list
         Frame indexes of representative structures (centroids)
-    """
+    """  # noqa: E501
     group = a_universe.select_atoms(selection)
     # Fragmentation of the trajectory
     n_frame = len(a_universe.trajectory)
@@ -151,7 +151,7 @@ def cluster_with_properties(a_universe, pcls, p_names=None,
     -------
     :class:`~idpflex.cluster.ClusterTrove`
         Hierarchical clustering tree of the centroids
-    """
+    """  # noqa: E501
     rep_ifr = trajectory_centroids(a_universe, selection=selection,
                                    segment_length=segment_length,
                                    n_representatives=n_representatives)
@@ -215,7 +215,7 @@ def cluster_trajectory(a_universe, selection='not name H*',
     -------
     :class:`~idpflex.cluster.ClusterTrove`
         clustering results for the representatives
-    """
+    """  # noqa: E501
     rep_ifr = trajectory_centroids(a_universe, selection=selection,
                                    segment_length=segment_length,
                                    n_representatives=n_representatives)

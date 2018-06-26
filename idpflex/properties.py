@@ -256,7 +256,7 @@ class AsphericityMixin(object):
         -------
         self: :class:`~idpflex.properties.Asphericity`
             Instantiated Asphericity object
-        """ # noqa: E501
+        """  # noqa: E501
         return self.from_universe(mda.Universe(filename), selection)
 
 
@@ -349,7 +349,7 @@ class SaSaMixin(object):
         -------
         self: :class:`~idpflex.properties.SaSa`
             Instantiated SaSa property object
-        """ # noqa: E501
+        """  # noqa: E501
         self.selection = selection
         a_traj = mdtraj.load_pdb(filename)
         if selection is not None:
@@ -383,7 +383,7 @@ class SaSaMixin(object):
         -------
         self: :class:`~idpflex.properties.SaSa`
             Instantiated SaSa property object
-        """ # noqa: E501
+        """  # noqa: E501
         with iutl.temporary_file(suffix='.pdb') as filename:
             a_universe.trajectory[index]  # jump to frame
             a_universe.atoms.write(filename)
@@ -439,7 +439,7 @@ class EndToEndMixin(object):
         -------
         self: :class:`~idpflex.properties.EndToEnd`
             Instantiated EndToEnd object
-        """ # noqa: E501
+        """  # noqa: E501
         selection = a_universe.select_atoms(selection)
         self.pair = (selection[0], selection[-1])
         a_universe.trajectory[index]  # jump to frame
@@ -467,7 +467,7 @@ class EndToEndMixin(object):
         -------
         self: :class:`~idpflex.properties.EndToEnd`
             Instantiated EndToEnd object
-        """ # noqa: E501
+        """  # noqa: E501
         return self.from_universe(mda.Universe(filename), selection)
 
 
@@ -515,7 +515,7 @@ class RadiusOfGyrationMixin(object):
         -------
         self: :class:`~idpflex.properties.RadiusOfGyration`
             Instantiated RadiusOfGyration object
-        """ # noqa: E501
+        """  # noqa: E501
         if selection is None:
             self.selection = a_universe.atoms
         else:
@@ -541,7 +541,7 @@ class RadiusOfGyrationMixin(object):
         -------
         self: :class:`~idpflex.properties.RadiusOfGyration`
             Instantiated RadiusOfGyration property object
-        """ # noqa: E501
+        """  # noqa: E501
         return self.from_universe(mda.Universe(filename), selection)
 
 
@@ -591,7 +591,7 @@ class ResidueContactMap(object):
         Underterminacies for every contact of cmap
     cutoff: float
         Cut-off distance defining a contact between two atoms
-    """ # noqa: E501
+    """  # noqa: E501
 
     default_name = 'cm'
 
@@ -622,7 +622,7 @@ class ResidueContactMap(object):
         -------
         self: :class:`~idpflex.properties.ResidueContactMap`
             Instantiated ResidueContactMap object
-        """ # noqa: E501
+        """  # noqa: E501
         if selection is None:
             self.selection = a_universe.atoms
         else:
@@ -669,7 +669,7 @@ class ResidueContactMap(object):
         -------
         self: :class:`~idpflex.properties.ResidueContactMap`
             Instantiated ResidueContactMap object
-        """ # noqa: E501
+        """  # noqa: E501
         return self.from_universe(mda.Universe(filename), cutoff, selection)
 
     def plot(self):
