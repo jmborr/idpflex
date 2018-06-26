@@ -508,7 +508,7 @@ class RadiusOfGyrationMixin(object):
             Trajectory, or single-conformation instance.
         selection: str
             Atomic selection. All atoms considered if None is passed. See the
-           `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
+            `selections page <https://www.mdanalysis.org/docs/documentation_pages/selections.html>`_
             for atom selection syntax.
 
         Returns
