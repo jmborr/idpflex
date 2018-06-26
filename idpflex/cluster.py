@@ -164,8 +164,9 @@ def cluster_with_properties(a_universe, pcls, p_names=None,
     # Calculate properties for each centroid
     l_prop = list()
     for p_name, Pcl in zip(p_names, pcls):
+
         l_prop.append([Pcl(name=p_name).from_universe(a_universe, index=i)
-                       for i in rep_ifr])
+                       for i in tqdm(rep_ifr)])
 
     # Calculate distances between pair of centroids
     xyz = np.zeros((len(pcls), n_centroids))
