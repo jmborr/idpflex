@@ -111,9 +111,9 @@ class TestResidueContactMap(object):
     def test_from_universe(self, trajectory_benchmark):
         cm = ps.ResidueContactMap().from_universe(trajectory_benchmark,
                                                   8, 'name CA')
-        assert np.sum(cm.y) == 333
+        assert np.sum(cm.y) == 363
         cm = ps.ResidueContactMap().from_universe(trajectory_benchmark, 4)
-        assert np.sum(cm.y) == 295
+        assert np.sum(cm.y) == 313
 
     def test_from_pdb(self, ss_benchmark):
         filename = ss_benchmark['pdb_file']

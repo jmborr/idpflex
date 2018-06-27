@@ -1,6 +1,8 @@
 from __future__ import print_function, absolute_import
 
 import os
+from contextlib import contextmanager
+import tempfile
 import MDAnalysis as mda
 
 
@@ -26,3 +28,23 @@ def write_frame(a_universe, iframe, file_name):
 
     with mda.Writer(file_name) as writer:
         writer.write(a_universe)
+
+
+@contextmanager
+def temporary_file(**kwargs):
+    r"""Creates a temporary file
+
+    Parameters
+    ----------
+    kwargs : dict
+        optional arguments to tempfile.mkstemp
+    Yields
+    ------
+    str
+        Absolute path name to file
+    """
+    handle, name = tempfile.mkstemp(**kwargs)
+    try:
+        yield name
+    finally:
+        os.remove(name)
