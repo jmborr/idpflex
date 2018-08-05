@@ -46,6 +46,7 @@ quantitative comparison to SAS data, yielding the probability of the IDP to adop
 conformation of a particular sub-state. idpflex can also compute other structural features
 for the substates such as contact maps and secondary structure, and it’s extensible
 to include other features on interest.
+Other programs like SASSIE [@Curtis:2012]
 
 # Acknowledgements
 
