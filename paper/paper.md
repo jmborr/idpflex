@@ -9,16 +9,16 @@ tags:
     - molecular dynamics
 authors:
     - name: Jose M. Borreguero
-      orcid 0000-0002-0866-8158
+      orcid: 0000-0002-0866-8158
       affiliation: 1
     - name: Fahima Islam
-      orcid 0000-0002-0265-0256
+      orcid: 0000-0002-0265-0256
       affiliation: 1
     - name: Utsab R. Shrestha
-      orcid 0000-0001-6985-6657
+      orcid: 0000-0001-6985-6657
       affiliation: 2
     - name: Loukas Petridis 
-      orcid 0000-0001-8569-060X
+      orcid: 0000-0001-8569-060X
       affiliation: 2
 affiliations:
  - name: Neutron Scattering Division, Oak Ridge National Laboratory, Oak Ridge TN, USA
