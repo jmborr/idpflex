@@ -2,7 +2,7 @@
 History
 =======
 
-0.1.6 (TBA)
+0.1.6 (2018-08-17)
 ------------------
 * implement K-means clustering (PR #67)
 * Added Asphericity property (PR #65)
