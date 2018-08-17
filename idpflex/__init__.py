@@ -2,6 +2,6 @@
 
 """Top-level package for idpflex."""
 
-__author__ = """Jose Borreguero"""
+__author__ = 'Jose Borreguero'
 __email__ = 'borreguero@gmail.com'
-__version__ = '__version__ = '__version__ = '__version__ = '0.1.6''''
+__version__ = '0.1.6'
