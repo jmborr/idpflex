@@ -10,4 +10,10 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Fahima Islam
+
+Collaborators
+-------------
+
+* Utsab Shrestha
+* Loukas Petridis
