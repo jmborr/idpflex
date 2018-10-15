@@ -14,7 +14,7 @@ Contents:
    authors
    history
 
-It is estimated that about 30\% of the eucariotic proteome consists of
+It is estimated that about 30% of the eucariotic proteome consists of
 intrinsically disordered proteins (IDP’s), yet their presence in public
 structural databases is severely underrepresented.
 IDP’s adopt heterogeneous inter-converting conformations with similar
