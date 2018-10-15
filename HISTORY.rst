@@ -2,6 +2,10 @@
 History
 =======
 
+0.1.7
+-----
+* Added a statement-of-need (PR #73)
+
 0.1.6 (2018-08-17)
 ------------------
 * implement K-means clustering (PR #67)

@@ -49,6 +49,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinxcontrib.bibtex'
 ]
 napoleon_google_docstring = False
 napoleon_use_param = False
