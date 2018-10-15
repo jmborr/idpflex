@@ -10,6 +10,7 @@ MDAnalysis
 tqdm
 sphinx
 sphinx_rtd_theme
+sphinxcontrib-bibtex
 matplotlib
 nglview
 pathos
