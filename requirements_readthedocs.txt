@@ -12,3 +12,5 @@ sphinxcontrib-bibtex
 matplotlib
 nglview
 pathos
+mdtraj
+MDAnalysis
