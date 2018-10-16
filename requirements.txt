@@ -5,7 +5,7 @@ six
 h5py
 lmfit
 pandas
-mdtraj<=1.9.1
+mdtraj<=1.8.0
 MDAnalysis
 tqdm
 sphinx
