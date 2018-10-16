@@ -1,11 +1,11 @@
-cython>=0.28
-numpy>=1.13
+cython
+numpy
 scipy
 six
 h5py
 lmfit
 pandas
-mdtraj
+mdtraj<=1.9.1
 MDAnalysis
 tqdm
 sphinx
