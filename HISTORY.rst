@@ -4,6 +4,7 @@ History
 
 0.1.7
 -----
+* Check for executable crysol (PR #77)
 * Added a statement-of-need (PR #73)
 
 0.1.6 (2018-08-17)
