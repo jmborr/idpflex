@@ -5,7 +5,6 @@ six
 h5py
 lmfit
 pandas
-MDAnalysis
 tqdm
 sphinx
 sphinx_rtd_theme
