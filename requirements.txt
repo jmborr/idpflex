@@ -1,5 +1,5 @@
-cython
-numpy
+cython>=0.29
+numpy>=1.13
 scipy
 six
 h5py
