@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 
 requirements = [
     'future', 'scipy', 'numpy', 'six', 'pandas', 'h5py', 'matplotlib',
-    'lmfit', 'mdtraj', 'MDAnalysis', 'tqdm', 'nglview', 'pathos'
+    'lmfit', 'mdtraj', 'MDAnalysis', 'tqdm'
     # TODO: put package requirements here
 ]
 
