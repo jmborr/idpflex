@@ -1,0 +1,21 @@
+name: idpflex
+
+channels:
+  - conda-forge
+  - omnia
+
+dependencies:
+  - cython
+  - numpy
+  - scipy
+  - six
+  - h5py
+  - lmfit
+  - pandas
+  - tqdm
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinxcontrib-bibtex
+  - matplotlib
+  - mdtraj
+  - MDAnalysis
