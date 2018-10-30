@@ -4,6 +4,7 @@ History
 
 0.1.7
 -----
+* Check for executable dssp (PR #79)
 * Conda support to build readthedocs (PR #76)
 * Check for executable crysol (PR #77)
 * Added a statement-of-need (PR #73)
