@@ -4,6 +4,11 @@
 Installation
 ============
 
+Requirements
+------------
+
+- Operative system: Linux or iOS
+
 
 Stable release
 --------------
