@@ -2,8 +2,8 @@
 History
 =======
 
-0.1.7
------
+0.1.7 (2018-12-07)
+------------------
 * Check for executable dssp (PR #79)
 * Conda support to build readthedocs (PR #76)
 * Check for executable crysol (PR #77)

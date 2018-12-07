@@ -38,7 +38,7 @@ setup(
     zip_safe=False,
     keywords='idpflex',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',
         'License :: OSI Approved :: MIT License',
