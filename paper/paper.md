@@ -63,7 +63,7 @@ The python package `idpflex` clusters the 3D conformations resulting from
 an MD simulation into a hierarchical tree by means of structural similarity
 among pairs of conformations. The conformations produced by the simulation
 take the role of Leafs in the hierarchichal tree. Nodes in the tree take the
-rol of IDP substates, with conformations under a particular Node making up
+role of IDP substates, with conformations under a particular Node making up
 one substate. Strictly speaking, `idfplex` does not require the
 IDP conformations to be produced by an MD simulation. Alternative conformation
 generators can be used, such as torsional sampling of the protein
@@ -73,7 +73,7 @@ discard any conformation by labelling it as incompatible with the
 experimental data. This data is an average over
 all conformations, and using this average as the criterion by which
 to discard any specific conformation can lead to erroneous
-discarding decisions by the reasons stated above.
+discarding decisions due to the reasons stated above.
 
 Default clustering is performed according to structural similarity
 between pairs of conformations, defined by the root mean square deviation
