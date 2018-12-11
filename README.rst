@@ -17,5 +17,8 @@ idpflex
    :alt: Join the chat at https://gitter.im/idpflex/Lobby
    :target: https://gitter.im/idpflex/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
+.. image:: http://joss.theoj.org/papers/10.21105/joss.01007/status.svg
+   :target: https://doi.org/10.21105/joss.01007
+
 Analysis of intrinsically disordered proteins by comparing MD simulations to
 Small Angle Scattering experiments.
