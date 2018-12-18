@@ -32,6 +32,14 @@ def test_model_at_depth(sans_fit):
                               p_exp.y, decimal=1)
 
 
+def test_fit_at_depth(sans_fit):
+    tree = sans_fit['tree']
+    name = sans_fit['property_name']
+    p_exp = sans_fit['experiment_property']
+    fit = bayes.fit_at_depth(tree, p_exp, name, sans_fit['depth'])
+    assert fit.chisqr < 1e-10
+
+
 def test_fit_to_depth(sans_fit):
     tree = sans_fit['tree']
     name = sans_fit['property_name']
