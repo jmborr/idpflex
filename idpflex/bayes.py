@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import
-
 # from qef.models import TabulatedFunctionModel
 from lmfit.models import (Model, ConstantModel, index_of)
 from scipy.interpolate import interp1d

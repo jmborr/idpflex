@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.8
+-----
+* drop support for python 2.x (PR #83)
+* Add function fit_at_dept (PR #81)
+
 0.1.7 (2018-12-07)
 ------------------
 * Check for executable dssp (PR #79)

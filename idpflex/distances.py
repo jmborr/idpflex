@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import
-
 import random
 from contextlib import closing
 from functools import partial
