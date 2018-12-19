@@ -1,10 +1,7 @@
-from __future__ import print_function, absolute_import
-
 import pickle
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 import numpy as np
-from past.builtins import xrange
 
 from idpflex.distances import distance_submatrix
 
@@ -223,10 +220,10 @@ class Tree(object):
         # Create a list full of None's to store the node objects
         d = [None] * (n * 2 - 1)
         # Create the nodes corresponding to the n original objects.
-        for i in xrange(0, n):
+        for i in range(0, n):
             d[i] = node_class(i)
         nd = None
-        for i in xrange(0, n - 1):
+        for i in range(0, n - 1):
             fi = int(z[i, 0])
             fj = int(z[i, 1])
             if fi > i + n:
