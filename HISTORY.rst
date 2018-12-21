@@ -4,6 +4,7 @@ History
 
 0.1.8
 -----
+* decorator to create a namedtuple out of a dictionary (PR #86)
 * drop support for python 2.x (PR #83)
 * Add function fit_at_dept (PR #81)
 
