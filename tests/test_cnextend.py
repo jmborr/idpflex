@@ -71,5 +71,15 @@ class TestTree(object):
         assert ids == [44732, 44748, 44752, 44753]
 
 
+def test_random_distance_tree():
+    out = cnx.random_distance_tree(9)
+    dm = out.distance_matrix
+    # Indexes of the two leaves with the bigget mutual distance
+    idx = set(np.unravel_index(np.argmax(dm), dm.shape))
+    # the first partition of the root node cannot contain the indexes
+    # the two leaves with the bigget mutual distance
+    idx not in set(out.tree[-2].leaf_ids)
+
+
 if __name__ == '__main__':
     pytest.main()

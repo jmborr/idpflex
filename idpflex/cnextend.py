@@ -4,6 +4,7 @@ from scipy.spatial.distance import squareform
 import numpy as np
 
 from idpflex.distances import distance_submatrix
+from idpflex.utils import namedtuplefy
 
 
 class ClusterNodeX(hierarchy.ClusterNode):
@@ -315,3 +316,33 @@ def load_tree(filename):
     with open(filename, 'rb') as infile:
         t = pickle.load(infile)
     return t
+
+
+@namedtuplefy
+def random_distance_tree(n_leafs):
+    r"""
+    Instantiate a tree where leafs and nodes have random distances
+    to each other.
+
+    Distances randomly retrieved from a flat distribution of numbers
+    between 0 and 1
+
+    Parameters
+    ----------
+    n_leafs: int
+        Number of tree leaves
+
+    Returns
+    -------
+    namedtuple
+        Elements of the named tuple:
+        - tree: :class:`~idpflex.cnextend.Tree`
+            Tree instance
+        - distance_matrix: :class:`~numpy:numpy.ndarray`
+            square distance matrix in between pair of tree leafs
+    """
+    dm = np.random.rand(n_leafs ** 2).reshape(n_leafs, n_leafs)  # distance matrix
+    dm += dm.transpose()
+    np.fill_diagonal(dm, 0.0)  # symmetric matrix
+    t = Tree(z=hierarchy.linkage(squareform(dm), method='complete'))
+    return dict(tree=t, distance_matrix=dm)
