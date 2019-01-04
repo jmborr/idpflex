@@ -341,7 +341,7 @@ def random_distance_tree(n_leafs):
         - distance_matrix: :class:`~numpy:numpy.ndarray`
             square distance matrix in between pair of tree leafs
     """
-    dm = np.random.rand(n_leafs ** 2).reshape(n_leafs, n_leafs)  # distance matrix
+    dm = np.random.rand(n_leafs ** 2).reshape(n_leafs, n_leafs)
     dm += dm.transpose()
     np.fill_diagonal(dm, 0.0)  # symmetric matrix
     t = Tree(z=hierarchy.linkage(squareform(dm), method='complete'))
