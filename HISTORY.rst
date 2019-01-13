@@ -2,8 +2,8 @@
 History
 =======
 
-0.1.8
------
+0.1.8 (2019-01-12)
+------------------
 * cluster random distance (PR #87)
 * decorator to create a namedtuple out of a dictionary (PR #86)
 * drop support for python 2.x (PR #83)
