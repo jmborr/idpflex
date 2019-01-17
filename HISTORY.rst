@@ -2,6 +2,10 @@
 History
 =======
 
+0.1.9
+-----
+* Add a conda build recipe (PR #89)
+
 0.1.8 (2019-01-12)
 ------------------
 * cluster random distance (PR #87)

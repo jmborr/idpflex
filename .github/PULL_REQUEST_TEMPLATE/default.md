@@ -18,7 +18,7 @@ Fixes #xxxx. <!-- and fix #xxxx or close #xxxx xor resolves #xxxx -->
 - [ ] Is the code of an acceptable quality?
 - [ ] Does the code conform to the [coding standards]?
 - [ ] Are the unit tests small and test the class in isolation?
-- [ ] If there are changes in HISTORY.rst then do they describe the changes appropriately?
+- [ ] Has the HISTORY.rst file been updated?
 
 ##### Functional Tests #####
 
@@ -29,4 +29,3 @@ Fixes #xxxx. <!-- and fix #xxxx or close #xxxx xor resolves #xxxx -->
 
 - [ ] Has the relevant (user and developer) documentation been added/updated?
 
-Does everything look good? Mark the review as **Approve**. A member of `@qef/gatekeepers` will take care of it.

@@ -1,0 +1,51 @@
+package:
+  name: idpflex
+  version: v0.1.8
+
+source:
+  git_rev: v0.1.8
+  git_url: https://github.com/jmborr/idpflex.git
+
+requirements:
+  build:
+    - python
+    - pyyaml
+    - future
+    - cython
+    - numpy
+    - scipy
+    - pandas
+    - h5py
+    - matplotlib
+    - lmfit
+    - mdtraj
+    - MDAnalysis
+    - tqdm
+    - pytest
+    - pytest-runner
+
+  run:
+    - python
+    - pyyaml
+    - future
+    - cython
+    - numpy
+    - scipy
+    - pandas
+    - h5py
+    - matplotlib
+    - lmfit
+    - mdtraj
+    - MDAnalysis
+    - tqdm
+    - pytest
+    - pytest-runner
+
+test:
+  imports:
+    - idpflex
+  
+about:
+  home: http://idpflex.readthedocs.io/en/latest/
+  license:
+  license_file:
