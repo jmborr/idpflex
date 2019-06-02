@@ -1146,7 +1146,7 @@ class ProfileProperty(object):
         -------
         numpy.ndarray
         """
-        return np.ones(len(self.profile)) / len(self.profile)
+        return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
 
 
 class SansLoaderMixin(object):

@@ -142,7 +142,7 @@ def generate_distance_matrix(feature_vectors, weights=None,
     features of the measurements
 
     Each measurement is characterized by a set of features, here
-    implemented as a feature vector. Thus, we sample each feature
+    implemented as a vector. Thus, we sample each feature vector-item
     a number of times equal to the number of measurements.
 
     Distance `d` between two feature vectors `f` and `g` given weights `w`
@@ -151,12 +151,15 @@ def generate_distance_matrix(feature_vectors, weights=None,
     Parameters
     ----------
     feature_vectors: list
-        List of feature vectors for each measurement
-    weights: numpy.ndarray
-        Weight of each feature
+        List of feature vectors, one vector for each measurement
+    weights: list
+        List of feature weight vectors, one for each measurement
     func1d: function
-        Apply this function to each feature set. Default transform the
-        values in each feature set to have zero mean and unit deviation
+        Apply this function to the set of values obtained for each
+        feature vector-item. The size of the set is number of
+        measurements. The default function transforms the
+        values in each feature vector-item set such that the set
+        has zero mean and unit standard deviation.
     func1d_args: list
         Positional arguments to func1D
     func1d_kwargs: dict
@@ -169,14 +172,15 @@ def generate_distance_matrix(feature_vectors, weights=None,
     if len(set([len(fv) for fv in feature_vectors])) > 1:
         raise RuntimeError('features vectors have different sizes')
     xyz = np.array(feature_vectors)  # shape=(#vectors, #features)
-    # Apply func1D to each feature set
+
+    # Apply func1D to each feature vector-item set (axis 0 of array xyz)
     fargs = [] if func1d_args is None else list(func1d_args)
     fkwargs = {} if func1d_kwargs is None else dict(func1d_kwargs)
     xyz = np.apply_along_axis(func1d, 0, xyz, *fargs, **fkwargs)
-    # weight each feature
+    # weight each feature vector
     if weights is not None:
-        if weights.size != feature_vectors[0].size:
-            raise RuntimeError('Number of weights different'
-                               'than number of features')
-        xyz *= weights[:, ]
+        if len(weights) != len(feature_vectors):
+            raise RuntimeError('Number of weight vectors different than'
+                               'number of feature vectors')
+        xyz *= np.array(weights)
     return squareform(scipy.spatial.distance_matrix(xyz, xyz))
