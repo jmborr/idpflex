@@ -16,6 +16,95 @@ from MDAnalysis.analysis.distances import contact_matrix
 from idpflex import utils as iutl
 
 
+class PropertyDict(object):
+    r"""
+    A container of properties mimicking some of the behavior of
+    a standard python dictionary, plus methods
+    representing features of the properties when taken as a group.
+
+    Parameters
+    ----------
+    properties: list
+        A list of properties to include
+    """
+
+    def __init__(self, properties=None):
+        self._properties = dict()
+        if properties is not None:
+            self._properties.update({p.name: p for p in properties})
+
+    def __iter__(self):
+        return iter(self._properties.values())
+
+    def __getitem__(self, name):
+        r"""
+        Fetch a property from `_properties` dictionary.
+
+        Parameters
+        ----------
+        name: str
+            name of the property
+
+        Returns
+        -------
+        property object, or `None` if no property is found with *name*
+        """
+        self._properties.get(name, None)
+
+    def __setitem__(self, name, value):
+        r"""
+        Inclue a property in the `_properties` dictionary.
+
+        Parameters
+        ----------
+        name: str
+            name of the property
+        value: Property
+        """
+        self._properties[name] = value
+
+    def get(self, name, default=None):
+        r"""
+        Mimic get method of a dictionary
+
+        Parameters
+        ----------
+        name: str
+            name of the property
+
+        default: object
+            default value if `name` is not one of the properties stored
+
+        Returns
+        -------
+        Property or default object
+        """
+        return self._properties.get(name, default=default)
+
+    def feature_vector(self, names):
+        r"""
+        Feature vector for the specified sequence of names.
+
+        The feature vector is a concatenation of the feature vectors for
+        each of the properties.
+
+        Parameters
+        ----------
+        names: list
+            List of property names
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return np.concatenate([self._properties[n].feature_vector
+                               for n in names])
+
+    def feature_weights(self, names):
+        return np.concatenate([self._properties[n].feature_weights
+                               for n in names])
+
+
 def register_as_node_property(cls, nxye):
     r"""Endows a class with the node property protocol.
 
@@ -130,6 +219,14 @@ class ScalarProperty(object):
         if not isinstance(y, numbers.Real):
             raise TypeError("y must be a non-complex number")
         self.y = y
+
+    @property
+    def feature_vector(self):
+        return np.array([self.y, ])
+
+    @property
+    def feature_weights(self):
+        return np.array([1])
 
     def histogram(self, bins=10, errors=False, **kwargs):
         r"""Histogram of values for the leaf nodes
@@ -1025,6 +1122,31 @@ class ProfileProperty(object):
         self.profile = profile
         self.errors = errors
         self.node = None
+
+    @property
+    def feature_vector(self):
+        r"""
+        Each `qvalue` is interpreted as an independent feature,
+        and the related value in `profile` is a particular
+        "measured" value of that feature.
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return self.profile
+
+    @property
+    def feature_weights(self):
+        r"""
+        Weights to be used when calculating the square of the euclidean
+        distance between two feature vectors
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return np.ones(len(self.profile)) / len(self.profile)
 
 
 class SansLoaderMixin(object):

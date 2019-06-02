@@ -9,7 +9,7 @@ from idpflex.utils import namedtuplefy
 
 class ClusterNodeX(hierarchy.ClusterNode):
     r"""Extension of :py:class:`~scipy:scipy.cluster.hierarchy.ClusterNode`
-    to accommodate a parent reference and a protected dictionary
+    to accommodate a parent reference and a dictionary-like
     of properties.
     """
     def __init__(self, *args, **kwargs):
@@ -19,10 +19,10 @@ class ClusterNodeX(hierarchy.ClusterNode):
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None  # parent node
         self._tree = None
-        self._properties = dict()
+        self.property_group = None
 
     def __getitem__(self, name):
-        r"""Fetch a property from protected `_properties` dictionary.
+        r"""Fetch a property from `property_group` dictionary.
 
         Parameters
         ----------
@@ -33,10 +33,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
         -------
         property object, or `None` if no property is found with *name*
         """
-        if name in self._properties:
-            return self._properties[name]
-        else:
-            return None
+        return self.property_group.get(name, None)
 
     @property
     def tree(self):
@@ -68,17 +65,6 @@ class ClusterNodeX(hierarchy.ClusterNode):
         :class:`list`
         """
         return list(leaf.id for leaf in self.leafs)
-
-    def add_property(self, a_property):
-        r"""Insert or update a property in the set of properties
-
-        Parameters
-        ----------
-        a_property : :class:`~idpflex.properties.ProfileProperty`
-            a property instance
-        """
-        self._properties[a_property.name] = a_property
-        a_property.node = self
 
     def distance_submatrix(self, dist_mat):
         r"""Extract matrix of distances between leafs under the node.
@@ -146,9 +132,11 @@ class Tree(object):
     z : :class:`~numpy:numpy.ndarray`
         linkage matrix from which to create the tree. See
         :func:`~scipy:scipy.cluster.hierarchy.linkage`
+    dm: :class:`~numpy:numpy.ndarray`
+        distance matrix from which to create the linkage matrix and tree
     """
 
-    def __init__(self, z=None):
+    def __init__(self, z=None, dm=None):
         self.root = None  # topmost node
         self.z = z
         # list of nodes, position in the list is node ID. Last is the root node
@@ -156,6 +144,9 @@ class Tree(object):
         self.nleafs = 0  # a leaf is a node at the bottom of the tree
         if self.z is not None:
             self.from_linkage_matrix(self.z)
+        elif dm is not None:
+            self.z = hierarchy.linkage(dm, method='complete')
+            self.from_distance_matrix(self.z)
 
     def __iter__(self):
         r"""Navigate the tree in order of decreasing node ID, starting from

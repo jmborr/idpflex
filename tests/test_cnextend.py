@@ -10,7 +10,7 @@ class TestClusterNodeX(object):
 
     def test_property(self):
         n = cnx.ClusterNodeX(0)
-        n._properties['prop'] = True
+        n.property_group['prop'] = True
         assert n['prop'] is True
 
     def test_leafs(self, benchmark):
