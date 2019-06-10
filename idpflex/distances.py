@@ -180,7 +180,7 @@ def generate_distance_matrix(feature_vectors, weights=None,
     # weight each feature vector
     if weights is not None:
         if len(weights) != len(feature_vectors):
-            raise RuntimeError('Number of weight vectors different than'
+            raise RuntimeError('Number of weight vectors different than '
                                'number of feature vectors')
         xyz *= np.array(weights)
     return squareform(scipy.spatial.distance_matrix(xyz, xyz))

@@ -37,13 +37,14 @@ class ClusterNodeX(hierarchy.ClusterNode):
         return self.property_group.get(name, None)
 
     def __setitem__(self, a_property_name, a_property):
-        r"""Inset or update a property in the `property_group` disctionary.
+        r"""Insert or update a property in the `property_group` disctionary.
 
         Parameters
         ----
         a_property_name : str
             name of the property
         a_property : :class:`~idpflex.properties.ProfileProperty`
+                     or :class:`~idpflex.properties.ScalarProperty`
             a property instance
         """
         self.property_group[a_property_name] = a_property

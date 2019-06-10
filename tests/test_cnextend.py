@@ -4,6 +4,7 @@ from numpy.testing import assert_array_equal
 from scipy.cluster import hierarchy
 
 from idpflex import cnextend as cnx
+from idpflex.properties import ScalarProperty
 
 
 class TestClusterNodeX(object):
@@ -12,6 +13,13 @@ class TestClusterNodeX(object):
         n = cnx.ClusterNodeX(0)
         n.property_group['prop'] = True
         assert n['prop'] is True
+        assert n['not_a_key'] is None
+        prop = ScalarProperty(name='some_prop', y=np.array([1, 2, 3]))
+        n[prop.name] = prop
+        assert_array_equal(n[prop.name].y, prop.y)
+        assert prop.node is n
+        with pytest.raises(AttributeError):
+            n['not_a_property'] = 'not a property class'
 
     def test_leafs(self, benchmark):
         t = benchmark['tree']
