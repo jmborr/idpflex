@@ -1357,7 +1357,7 @@ def propagator_weighted_sum(values, tree,
                                                              tree.nleafs)
         raise ValueError(msg)
     for i, leaf in enumerate(tree.leafs):
-        leaf.add_property(values[i])
+        leaf[values[i].name] = values[i]
     property_class = values[0].__class__  # type of the property
     name = values[0].name  # name of the property
     # Propagate up the tree nodes
@@ -1373,7 +1373,7 @@ def propagator_weighted_sum(values, tree,
             prop.e = np.sqrt(w[0] * left_prop.e**2 + w[1] * right_prop.e**2)
         else:
             prop.e = None
-        node.add_property(prop)
+        node[prop.name] = prop
 
 
 def weights_by_size(left_node, right_node):

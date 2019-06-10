@@ -12,6 +12,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
     to accommodate a parent reference and a dictionary-like
     of properties.
     """
+
     def __init__(self, *args, **kwargs):
         # Using of *super* is unfeasible because *ClusterNode* does not
         # inherit from *object*.
@@ -19,7 +20,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None  # parent node
         self._tree = None
-        self.property_group = None
+        self.property_group = dict()
 
     def __getitem__(self, name):
         r"""Fetch a property from `property_group` dictionary.
@@ -34,6 +35,19 @@ class ClusterNodeX(hierarchy.ClusterNode):
         property object, or `None` if no property is found with *name*
         """
         return self.property_group.get(name, None)
+
+    def __setitem__(self, a_property_name, a_property):
+        r"""Inset or update a property in the `property_group` disctionary.
+
+        Parameters
+        ----
+        a_property_name : str
+            name of the property
+        a_property : :class:`~idpflex.properties.ProfileProperty`
+            a property instance
+        """
+        self.property_group[a_property_name] = a_property
+        a_property.node = self
 
     @property
     def tree(self):
@@ -146,7 +160,7 @@ class Tree(object):
             self.from_linkage_matrix(self.z)
         elif dm is not None:
             self.z = hierarchy.linkage(dm, method='complete')
-            self.from_distance_matrix(self.z)
+            self.from_linkage_matrix(self.z)
 
     def __iter__(self):
         r"""Navigate the tree in order of decreasing node ID, starting from

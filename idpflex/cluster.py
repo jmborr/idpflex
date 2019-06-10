@@ -177,7 +177,8 @@ def cluster_with_properties(a_universe, pcls, p_names=None,
     # Cluster the representative structures
     tree = Tree(z=hierarchy.linkage(distance_matrix, method='complete'))
     for i_leaf, leaf in enumerate(tree.leafs):
-        leaf.add_property(ScalarProperty(name='iframe', y=rep_ifr[i_leaf]))
+        prop = ScalarProperty(name='iframe', y=rep_ifr[i_leaf])
+        leaf[prop.name] = prop
 
     # Propagate the properties up the tree
     [propagator_size_weighted_sum(prop, tree) for prop in l_prop]
@@ -226,7 +227,8 @@ def cluster_trajectory(a_universe, selection='not name H*',
     # Cluster the representative structures
     tree = Tree(z=hierarchy.linkage(distance_matrix, method='complete'))
     for i_leaf, leaf in enumerate(tree.leafs):
-        leaf.add_property(ScalarProperty(name='iframe', y=rep_ifr[i_leaf]))
+        prop = ScalarProperty(name='iframe', y=rep_ifr[i_leaf])
+        leaf[prop.name] = prop
 
     return ClusterTrove(rep_ifr, distance_matrix, tree)
 
