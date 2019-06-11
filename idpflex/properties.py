@@ -111,12 +111,14 @@ class PropertyDict(object):
         """
         return self._properties.values()
 
-    def feature_vector(self, names):
+    def feature_vector(self, names=None):
         r"""
         Feature vector for the specified sequence of names.
 
         The feature vector is a concatenation of the feature vectors for
         each of the properties.
+
+        If names is None, return all features in the property dict.
 
         Parameters
         ----------
@@ -127,10 +129,16 @@ class PropertyDict(object):
         -------
         numpy.ndarray
         """
+        if names is None:
+            return np.concatenate([prop.feature_vector
+                                   for prop in self])
         return np.concatenate([self._properties[n].feature_vector
                                for n in names])
 
-    def feature_weights(self, names):
+    def feature_weights(self, names=None):
+        if names is None:
+            return np.concatenate([prop.feature_weights
+                                   for prop in self])
         return np.concatenate([self._properties[n].feature_weights
                                for n in names])
 
