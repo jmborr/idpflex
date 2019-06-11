@@ -150,9 +150,9 @@ def sans_benchmark(request):
         sans_property.from_sassena(handle, index=i)
         values.append(sans_property)
 
-    cryson_pdb = os.path.join(data_dir, 'sans', 'md_0_1.pdb')
+    cryson_pdb = os.path.join(data_dir, 'saxs', 'md_0_1.pdb')
     cryson_int = os.path.join(data_dir, 'sans', 'md_0_100.int')
-    cryson_xtc = os.path.join(data_dir, 'sans', 'md_0_1_noPBC.xtc')
+    cryson_xtc = os.path.join(data_dir, 'saxs', 'md_0_1_noPBC.xtc')
 
     def teardown():
         handle.close()
