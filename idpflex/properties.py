@@ -79,7 +79,17 @@ class PropertyDict(object):
         -------
         Property or default object
         """
-        return self._properties.get(name, default=default)
+        return self._properties.get(name, default)
+
+    def keys(self):
+        r"""
+        Mimic keys method of a dictionary
+
+        Returns
+        -------
+        dict_keys of `_properties`
+        """
+        return self._properties.keys()
 
     def feature_vector(self, names):
         r"""

@@ -266,8 +266,8 @@ class TestSansProperty(object):
     def test_from_cryson_int(self, sans_benchmark):
         sans_prop = ps.SansProperty()
         sans_prop.from_cryson_int(sans_benchmark['cryson_int'])
-        assert sans_prop.qvalues[8] == 0.32
-        assert sans_prop.profile[8] == 0.197659e4
+        assert sans_prop.qvalues[8] == 0.08
+        assert sans_prop.profile[8] == 0.229457E+06
         assert sans_prop.errors[8] == 0.0
 
     def test_from_cryson_pdb(self, sans_benchmark):
