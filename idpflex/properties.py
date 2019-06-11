@@ -1184,6 +1184,126 @@ class SansLoaderMixin(object):
         self.errors = np.zeros(len(q), dtype=np.float)
         return self
 
+    def from_cryson_int(self, file_name):
+        r"""Load profile from a `cryson \*.int <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """  # noqa: E501
+        contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 1))
+        self.qvalues = contents[:, 0]
+        self.profile = contents[:, 1]
+        self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
+
+    def from_cryson_fit(self, file_name):
+        r"""Load profile from a `cryson \*.fit <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file.
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """  # noqa: E501
+        contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 3))
+        self.qvalues = contents[:, 0]
+        self.profile = contents[:, 1]
+        self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
+
+    def from_cryson_pdb(self, file_name, command='cryson',
+                        args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
+                        silent=True):
+        r"""Calculate profile with cryson from a PDB file
+
+        Parameters
+        ----------
+        file_name : str
+            Path to PDB file
+        command : str
+            Command to invoke cryson
+        args : str
+            Arguments to pass to cryson
+        silent : bool
+            Suppress cryson standard output and standard error
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """
+        # Write cryson file within a temporary directory
+        curr_dir = os.getcwd()
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        call_stack = [command] + args.split() + [file_name]
+        if silent:
+            FNULL = open(os.devnull, 'w')  # silence cryson output
+            subprocess.call(call_stack, stdout=FNULL, stderr=subprocess.STDOUT)
+        else:
+            subprocess.call(call_stack)
+        # Load the cryson file
+        ext_2_load = dict(int=self.from_cryson_int, fit=self.from_cryson_fit)
+        stop_search = False
+        for name in os.listdir(temp_dir):
+            for ext in ext_2_load:
+                if fnmatch.fnmatch(name, '*.{}'.format(ext)):
+                    ext_2_load[ext](name)
+                    stop_search = True
+                    break
+            if stop_search:
+                break
+        # Delete the temporary directory
+        os.chdir(curr_dir)
+        subprocess.call('/bin/rm -rf {}'.format(temp_dir).split())
+        return self
+
+    def from_ascii(self, file_name):
+        r"""Load profile from an ascii file.
+
+        | Expected file format:
+        | Rows have three items separated by a blank space:
+        | - *col1* momentum transfer
+        | - *col2* profile
+        | - *col3* errors of the profile
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """
+        contents = np.loadtxt(file_name, skiprows=0, usecols=(0, 1, 2))
+        self.qvalues = contents[:, 0]
+        self.profile = contents[:, 1]
+        self.errors = contents[:, 2]
+        return self
+
+    def to_ascii(self, file_name):
+        r"""Save profile as a three-column ascii file.
+
+        | Rows have three items separated by a blank space
+        | - *col1* momentum transfer
+        | - *col2* profile
+        | - *col3* errors of the profile
+        """
+        dir_name = os.path.dirname(file_name)
+        if dir_name and not os.path.isdir(dir_name):
+            os.makedirs(dir_name)
+        xye = np.array([list(self.x), list(self.y), list(self.e)])
+        np.savetxt(file_name, xye.transpose(),
+                   header='Momentum-transfer Profile Profile-errors')
+
 
 class SansProperty(ProfileProperty, SansLoaderMixin):
     r"""Implementation of a node property for SANS data
