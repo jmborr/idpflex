@@ -91,6 +91,26 @@ class PropertyDict(object):
         """
         return self._properties.keys()
 
+    def items(self):
+        r"""
+        Mimic items method of a dictionary
+
+        Returns
+        -------
+        dict_items of `_properties`
+        """
+        return self._properties.items()
+
+    def values(self):
+        r"""
+        Mimic values method of a dictionary
+
+        Returns
+        -------
+        dict_values of `_properties`
+        """
+        return self._properties.values()
+
     def feature_vector(self, names):
         r"""
         Feature vector for the specified sequence of names.
