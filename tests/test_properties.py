@@ -271,7 +271,7 @@ class TestSansProperty(object):
         assert sans_prop.profile[8] == 0.229457E+06
         assert sans_prop.errors[8] == 0.0
 
-    @pytest.mark.skipif(shutil.which('cryson') is None)
+    @pytest.mark.skipif(shutil.which('cryson') is None, reason='Needs cryson')
     def test_from_cryson_pdb(self, sans_benchmark):
         sans_prop = ps.SansProperty()
         sans_prop.from_cryson_pdb(sans_benchmark['cryson_pdb'], args='')
@@ -313,7 +313,7 @@ class TestSaxsProperty(object):
         assert saxs_prop.profile[8] == 1740900.0
         assert saxs_prop.errors[8] == 0.0
 
-    @pytest.mark.skipif(shutil.which('crysol') is None)
+    @pytest.mark.skipif(shutil.which('crysol') is None, reason='Needs crysol')
     def test_from_crysol_pdb(self, saxs_benchmark):
         saxs_prop = ps.SaxsProperty()
         saxs_prop.from_crysol_pdb(saxs_benchmark['crysol_pdb'], args='')
