@@ -1,4 +1,0 @@
-
- Created by CRYSON v. 27 on   11-Jun-2019   10:13:07
-
- PDB file: md_0_1.pdb  Theoretical Rg:  54.84
