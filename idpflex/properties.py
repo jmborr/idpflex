@@ -1372,6 +1372,7 @@ class SansProperty(ProfileProperty, SansLoaderMixin):
 
     def __init__(self, *args, **kwargs):
         ProfileProperty.__init__(self, *args, **kwargs)
+        self.from_pdb = self.from_cryson_pdb
         if self.name is None:
             self.name = SansProperty.default_name
 
@@ -1510,6 +1511,7 @@ class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
 
     def __init__(self, *args, **kwargs):
         ProfileProperty.__init__(self, *args, **kwargs)
+        self.from_pdb = self.from_crysol_pdb
         if self.name is None:
             self.name = SaxsProperty.default_name
 
