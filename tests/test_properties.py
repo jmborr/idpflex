@@ -1,6 +1,9 @@
 import random
 import numpy as np
 import pytest
+import tempfile
+import os
+import shutil
 
 from idpflex import properties as ps
 from idpflex.properties import SecondaryStructureProperty as SSP
@@ -261,6 +264,35 @@ class TestSansProperty(object):
         assert sans_prop.qvalues[13].item() - 0.0656565651298 < 0.000000001
         assert sans_prop.profile[13].item() - 741970.84461578 < 0.000001
 
+    def test_from_cryson_int(self, sans_benchmark):
+        sans_prop = ps.SansProperty()
+        sans_prop.from_cryson_int(sans_benchmark['cryson_int'])
+        assert sans_prop.qvalues[8] == 0.08
+        assert sans_prop.profile[8] == 0.229457E+06
+        assert sans_prop.errors[8] == 0.0
+
+    @pytest.mark.skipif(shutil.which('cryson') is None, reason='Needs cryson')
+    def test_from_cryson_pdb(self, sans_benchmark):
+        sans_prop = ps.SansProperty()
+        sans_prop.from_cryson_pdb(sans_benchmark['cryson_pdb'], args='')
+        sans_prop_ref = ps.SansProperty()
+        sans_prop_ref.from_cryson_int(sans_benchmark['cryson_int'])
+        np.testing.assert_array_almost_equal(
+            sans_prop.qvalues, sans_prop_ref.qvalues)
+        np.testing.assert_array_almost_equal(
+            sans_prop.profile, sans_prop_ref.profile)
+
+    def test_to_and_from_ascii(self, sans_benchmark):
+        sans_prop_ref = ps.SansProperty()
+        sans_prop_ref.from_cryson_int(sans_benchmark['cryson_int'])
+        sans_prop = ps.SansProperty()
+        f = tempfile.NamedTemporaryFile(delete=False)
+        sans_prop_ref.to_ascii(f.name)
+        sans_prop.from_ascii(f.name)
+        os.remove(f.name)
+        np.testing.assert_array_almost_equal(
+            sans_prop.qvalues, sans_prop_ref.qvalues)
+
 
 class TestSaxsProperty(object):
 
@@ -280,6 +312,28 @@ class TestSaxsProperty(object):
         assert saxs_prop.qvalues[8] == 0.008
         assert saxs_prop.profile[8] == 1740900.0
         assert saxs_prop.errors[8] == 0.0
+
+    @pytest.mark.skipif(shutil.which('crysol') is None, reason='Needs crysol')
+    def test_from_crysol_pdb(self, saxs_benchmark):
+        saxs_prop = ps.SaxsProperty()
+        saxs_prop.from_crysol_pdb(saxs_benchmark['crysol_pdb'], args='')
+        saxs_prop_ref = ps.SaxsProperty()
+        saxs_prop_ref.from_crysol_int(saxs_benchmark['crysol_int'])
+        np.testing.assert_array_almost_equal(
+            saxs_prop.qvalues, saxs_prop_ref.qvalues)
+        np.testing.assert_array_almost_equal(
+            saxs_prop.profile, saxs_prop_ref.profile)
+
+    def test_to_and_from_ascii(self, saxs_benchmark):
+        saxs_prop_ref = ps.SaxsProperty()
+        saxs_prop_ref.from_crysol_int(saxs_benchmark['crysol_int'])
+        saxs_prop = ps.SaxsProperty()
+        f = tempfile.NamedTemporaryFile(delete=False)
+        saxs_prop_ref.to_ascii(f.name)
+        saxs_prop.from_ascii(f.name)
+        os.remove(f.name)
+        np.testing.assert_array_almost_equal(
+            saxs_prop.qvalues, saxs_prop_ref.qvalues)
 
 
 class TestPropagators(object):

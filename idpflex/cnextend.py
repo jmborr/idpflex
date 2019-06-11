@@ -5,6 +5,7 @@ import numpy as np
 
 from idpflex.distances import distance_submatrix
 from idpflex.utils import namedtuplefy
+import idpflex.properties
 
 
 class ClusterNodeX(hierarchy.ClusterNode):
@@ -20,7 +21,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None  # parent node
         self._tree = None
-        self.property_group = dict()
+        self.property_group = idpflex.properties.PropertyDict()
 
     def __getitem__(self, name):
         r"""Fetch a property from `property_group` dictionary.
@@ -43,10 +44,9 @@ class ClusterNodeX(hierarchy.ClusterNode):
         ----
         a_property_name : str
             name of the property
-        a_property : :class:`~idpflex.properties.ProfileProperty`
-                     or :class:`~idpflex.properties.ScalarProperty`
+        a_property : :class:`~idpflex.properties.ProfileProperty` or :class:`~idpflex.properties.ScalarProperty`
             a property instance
-        """
+        """  # noqa: E501
         self.property_group[a_property_name] = a_property
         a_property.node = self
 
