@@ -28,10 +28,14 @@ install:
   - pip install future six pandas mdtraj h5py lmfit MDAnalysis tqdm sphinx sphinx_rtd_theme sphinxcontrib-bibtex matplotlib codecov
 
 # Set display for tests involving matplotlib
-before_script: # configure a headless display to test plot generation
-- "export DISPLAY=:99.0"
-- "sh -e /etc/init.d/xvfb start"
-- sleep 3 # give xvfb some time to start
+# before_script: # configure a headless display to test plot generation
+# - "export DISPLAY=:99.0"
+# - "sh -e /etc/init.d/xvfb start"
+# - sleep 3 # give xvfb some time to start
+
+# with travis xenial this should be the new way to start xvfb
+services:
+  - xvfb
 
 script:
   - py.test --cov=idpflex idpflex tests
