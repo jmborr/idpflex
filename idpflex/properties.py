@@ -34,7 +34,7 @@ class PropertyDict(object):
             self._properties.update({p.name: p for p in properties})
 
     def __iter__(self):
-        return iter(self._properties.values())
+        return iter(self._properties.keys())
 
     def __getitem__(self, name):
         r"""
@@ -116,9 +116,11 @@ class PropertyDict(object):
         Feature vector for the specified sequence of names.
 
         The feature vector is a concatenation of the feature vectors for
-        each of the properties.
+        each of the properties and the concatenation follows the order of
+        names.
 
-        If names is None, return all features in the property dict.
+        If names is None, return all features in the property dict in the
+        order of insertion.
 
         Parameters
         ----------
@@ -131,14 +133,33 @@ class PropertyDict(object):
         """
         if names is None:
             return np.concatenate([prop.feature_vector
-                                   for prop in self])
+                                   for prop in self.values()])
         return np.concatenate([self._properties[n].feature_vector
                                for n in names])
 
     def feature_weights(self, names=None):
+        r"""
+        Feature vector weights for the specified sequence of names.
+
+        The feature vector weights is a concatenation of the feature vectors
+        weights for each of the properties and the concatenation follows the
+        order of names.
+
+        If names is None, return all features in the property dict in the
+        order of insertion.
+
+        Parameters
+        ----------
+        names: list
+            List of property names
+
+        Returns
+        -------
+        numpy.ndarray
+        """
         if names is None:
             return np.concatenate([prop.feature_weights
-                                   for prop in self])
+                                   for prop in self.values()])
         return np.concatenate([self._properties[n].feature_weights
                                for n in names])
 

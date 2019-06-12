@@ -2,7 +2,6 @@ import random
 import numpy as np
 import pytest
 import tempfile
-import os
 import shutil
 
 from idpflex import properties as ps
@@ -286,10 +285,9 @@ class TestSansProperty(object):
         sans_prop_ref = ps.SansProperty()
         sans_prop_ref.from_cryson_int(sans_benchmark['cryson_int'])
         sans_prop = ps.SansProperty()
-        f = tempfile.NamedTemporaryFile(delete=False)
-        sans_prop_ref.to_ascii(f.name)
-        sans_prop.from_ascii(f.name)
-        os.remove(f.name)
+        with tempfile.NamedTemporaryFile() as f:
+            sans_prop_ref.to_ascii(f.name)
+            sans_prop.from_ascii(f.name)
         np.testing.assert_array_almost_equal(
             sans_prop.qvalues, sans_prop_ref.qvalues)
 
@@ -328,10 +326,9 @@ class TestSaxsProperty(object):
         saxs_prop_ref = ps.SaxsProperty()
         saxs_prop_ref.from_crysol_int(saxs_benchmark['crysol_int'])
         saxs_prop = ps.SaxsProperty()
-        f = tempfile.NamedTemporaryFile(delete=False)
-        saxs_prop_ref.to_ascii(f.name)
-        saxs_prop.from_ascii(f.name)
-        os.remove(f.name)
+        with tempfile.NamedTemporaryFile() as f:
+            saxs_prop_ref.to_ascii(f.name)
+            saxs_prop.from_ascii(f.name)
         np.testing.assert_array_almost_equal(
             saxs_prop.qvalues, saxs_prop_ref.qvalues)
 
