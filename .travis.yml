@@ -4,6 +4,8 @@ python:
   - "3.7"
   - "3.6"
 
+cache: pip
+
 env: PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/tests
 
 before_install:
