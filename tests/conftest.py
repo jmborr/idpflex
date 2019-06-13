@@ -18,13 +18,14 @@ data_dir = os.path.join(os.path.dirname(this_module_path), 'data')
 
 
 @idprop.decorate_as_node_property((('name',       'name of the property'),
-                                  ('domain_bar', 'property domain'),
-                                  ('bar',        'property_value'),
-                                  ('error_bar',  'property error')))
+                                   ('domain_bar', 'property domain'),
+                                   ('bar',        'property_value'),
+                                   ('error_bar',  'property error')))
 class SimpleProperty(object):
     """
     An integer property, only for testing purposes
     """
+
     def __init__(self, value=0):
         """
         :param value: integer value
@@ -102,10 +103,17 @@ def saxs_benchmark():
     ------
     dict
         'crysol_file': absolute path to file.
+        'crysol_pdb': absolute path to file.
+        'crysol_int': absolute path to file.
+        'crysol_xtc': absolute path to file.
     """
 
     crysol_file = os.path.join(data_dir, 'saxs', 'crysol.dat')
-    return dict(crysol_file=crysol_file)
+    crysol_pdb = os.path.join(data_dir, 'saxs', 'md_0_1.pdb')
+    crysol_int = os.path.join(data_dir, 'saxs', 'md_0_100.int')
+    crysol_xtc = os.path.join(data_dir, 'saxs', 'md_0_1_noPBC.xtc')
+    return dict(crysol_file=crysol_file, crysol_pdb=crysol_pdb,
+                crysol_int=crysol_int, crysol_xtc=crysol_xtc)
 
 
 @pytest.fixture(scope='session')
@@ -119,6 +127,9 @@ def sans_benchmark(request):
         'property_list' : list of SansProperty instances, one for each leaf
         'tree_with_no_property' : cnextend.Tree with random distances among
             leafs and without included properties.
+        'cryson_pdb': absolute path to file.
+        'cryson_int': absolute path to file.
+        'cryson_xtc': absolute path to file.
     """
 
     # setup or initialization
@@ -139,11 +150,16 @@ def sans_benchmark(request):
         sans_property.from_sassena(handle, index=i)
         values.append(sans_property)
 
+    cryson_pdb = os.path.join(data_dir, 'saxs', 'md_0_1.pdb')
+    cryson_int = os.path.join(data_dir, 'sans', 'md_0_100.int')
+    cryson_xtc = os.path.join(data_dir, 'saxs', 'md_0_1_noPBC.xtc')
+
     def teardown():
         handle.close()
     request.addfinalizer(teardown)
     return dict(profiles=handle, property_list=values,
-                tree_with_no_property=tree)
+                tree_with_no_property=tree, cryson_pdb=cryson_pdb,
+                cryson_int=cryson_int, cryson_xtc=cryson_xtc)
 
 
 @pytest.fixture(scope='session')

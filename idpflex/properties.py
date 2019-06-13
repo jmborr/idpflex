@@ -16,6 +16,154 @@ from MDAnalysis.analysis.distances import contact_matrix
 from idpflex import utils as iutl
 
 
+class PropertyDict(object):
+    r"""
+    A container of properties mimicking some of the behavior of
+    a standard python dictionary, plus methods
+    representing features of the properties when taken as a group.
+
+    Parameters
+    ----------
+    properties: list
+        A list of properties to include
+    """
+
+    def __init__(self, properties=None):
+        self._properties = dict()
+        if properties is not None:
+            self._properties.update({p.name: p for p in properties})
+
+    def __iter__(self):
+        return iter(self._properties.keys())
+
+    def __getitem__(self, name):
+        r"""
+        Fetch a property from `_properties` dictionary.
+
+        Parameters
+        ----------
+        name: str
+            name of the property
+
+        Returns
+        -------
+        property object, or `None` if no property is found with *name*
+        """
+        self._properties.get(name, None)
+
+    def __setitem__(self, name, value):
+        r"""
+        Inclue a property in the `_properties` dictionary.
+
+        Parameters
+        ----------
+        name: str
+            name of the property
+        value: Property
+        """
+        self._properties[name] = value
+
+    def get(self, name, default=None):
+        r"""
+        Mimic get method of a dictionary
+
+        Parameters
+        ----------
+        name: str
+            name of the property
+
+        default: object
+            default value if `name` is not one of the properties stored
+
+        Returns
+        -------
+        Property or default object
+        """
+        return self._properties.get(name, default)
+
+    def keys(self):
+        r"""
+        Mimic keys method of a dictionary
+
+        Returns
+        -------
+        dict_keys of `_properties`
+        """
+        return self._properties.keys()
+
+    def items(self):
+        r"""
+        Mimic items method of a dictionary
+
+        Returns
+        -------
+        dict_items of `_properties`
+        """
+        return self._properties.items()
+
+    def values(self):
+        r"""
+        Mimic values method of a dictionary
+
+        Returns
+        -------
+        dict_values of `_properties`
+        """
+        return self._properties.values()
+
+    def feature_vector(self, names=None):
+        r"""
+        Feature vector for the specified sequence of names.
+
+        The feature vector is a concatenation of the feature vectors for
+        each of the properties and the concatenation follows the order of
+        names.
+
+        If names is None, return all features in the property dict in the
+        order of insertion.
+
+        Parameters
+        ----------
+        names: list
+            List of property names
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        if names is None:
+            return np.concatenate([prop.feature_vector
+                                   for prop in self.values()])
+        return np.concatenate([self._properties[n].feature_vector
+                               for n in names])
+
+    def feature_weights(self, names=None):
+        r"""
+        Feature vector weights for the specified sequence of names.
+
+        The feature vector weights is a concatenation of the feature vectors
+        weights for each of the properties and the concatenation follows the
+        order of names.
+
+        If names is None, return all features in the property dict in the
+        order of insertion.
+
+        Parameters
+        ----------
+        names: list
+            List of property names
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        if names is None:
+            return np.concatenate([prop.feature_weights
+                                   for prop in self.values()])
+        return np.concatenate([self._properties[n].feature_weights
+                               for n in names])
+
+
 def register_as_node_property(cls, nxye):
     r"""Endows a class with the node property protocol.
 
@@ -130,6 +278,14 @@ class ScalarProperty(object):
         if not isinstance(y, numbers.Real):
             raise TypeError("y must be a non-complex number")
         self.y = y
+
+    @property
+    def feature_vector(self):
+        return np.array([self.y, ])
+
+    @property
+    def feature_weights(self):
+        return np.array([1])
 
     def histogram(self, bins=10, errors=False, **kwargs):
         r"""Histogram of values for the leaf nodes
@@ -1026,6 +1182,31 @@ class ProfileProperty(object):
         self.errors = errors
         self.node = None
 
+    @property
+    def feature_vector(self):
+        r"""
+        Each `qvalue` is interpreted as an independent feature,
+        and the related value in `profile` is a particular
+        "measured" value of that feature.
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return self.profile
+
+    @property
+    def feature_weights(self):
+        r"""
+        Weights to be used when calculating the square of the euclidean
+        distance between two feature vectors
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
+
 
 class SansLoaderMixin(object):
     r"""Mixin class providing a set of methods to load SANS data into a
@@ -1061,6 +1242,126 @@ class SansLoaderMixin(object):
         self.profile = np.array(i, dtype=np.float)
         self.errors = np.zeros(len(q), dtype=np.float)
         return self
+
+    def from_cryson_int(self, file_name):
+        r"""Load profile from a `cryson \*.int <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """  # noqa: E501
+        contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 1))
+        self.qvalues = contents[:, 0]
+        self.profile = contents[:, 1]
+        self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
+
+    def from_cryson_fit(self, file_name):
+        r"""Load profile from a `cryson \*.fit <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file.
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """  # noqa: E501
+        contents = np.loadtxt(file_name, skiprows=1, usecols=(0, 3))
+        self.qvalues = contents[:, 0]
+        self.profile = contents[:, 1]
+        self.errors = np.zeros(len(self.qvalues), dtype=float)
+        return self
+
+    def from_cryson_pdb(self, file_name, command='cryson',
+                        args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
+                        silent=True):
+        r"""Calculate profile with cryson from a PDB file
+
+        Parameters
+        ----------
+        file_name : str
+            Path to PDB file
+        command : str
+            Command to invoke cryson
+        args : str
+            Arguments to pass to cryson
+        silent : bool
+            Suppress cryson standard output and standard error
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """
+        # Write cryson file within a temporary directory
+        curr_dir = os.getcwd()
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        call_stack = [command] + args.split() + [file_name]
+        if silent:
+            FNULL = open(os.devnull, 'w')  # silence cryson output
+            subprocess.call(call_stack, stdout=FNULL, stderr=subprocess.STDOUT)
+        else:
+            subprocess.call(call_stack)
+        # Load the cryson file
+        ext_2_load = dict(int=self.from_cryson_int, fit=self.from_cryson_fit)
+        stop_search = False
+        for name in os.listdir(temp_dir):
+            for ext in ext_2_load:
+                if fnmatch.fnmatch(name, '*.{}'.format(ext)):
+                    ext_2_load[ext](name)
+                    stop_search = True
+                    break
+            if stop_search:
+                break
+        # Delete the temporary directory
+        os.chdir(curr_dir)
+        subprocess.call('/bin/rm -rf {}'.format(temp_dir).split())
+        return self
+
+    def from_ascii(self, file_name):
+        r"""Load profile from an ascii file.
+
+        | Expected file format:
+        | Rows have three items separated by a blank space:
+        | - *col1* momentum transfer
+        | - *col2* profile
+        | - *col3* errors of the profile
+
+        Parameters
+        ----------
+        file_name : str
+            File path
+
+        Returns
+        -------
+        self : :class:`~idpflex.properties.SansProperty`
+        """
+        contents = np.loadtxt(file_name, skiprows=0, usecols=(0, 1, 2))
+        self.qvalues = contents[:, 0]
+        self.profile = contents[:, 1]
+        self.errors = contents[:, 2]
+        return self
+
+    def to_ascii(self, file_name):
+        r"""Save profile as a three-column ascii file.
+
+        | Rows have three items separated by a blank space
+        | - *col1* momentum transfer
+        | - *col2* profile
+        | - *col3* errors of the profile
+        """
+        dir_name = os.path.dirname(file_name)
+        if dir_name and not os.path.isdir(dir_name):
+            os.makedirs(dir_name)
+        xye = np.array([list(self.x), list(self.y), list(self.e)])
+        np.savetxt(file_name, xye.transpose(),
+                   header='Momentum-transfer Profile Profile-errors')
 
 
 class SansProperty(ProfileProperty, SansLoaderMixin):
@@ -1235,7 +1536,7 @@ def propagator_weighted_sum(values, tree,
                                                              tree.nleafs)
         raise ValueError(msg)
     for i, leaf in enumerate(tree.leafs):
-        leaf.add_property(values[i])
+        leaf[values[i].name] = values[i]
     property_class = values[0].__class__  # type of the property
     name = values[0].name  # name of the property
     # Propagate up the tree nodes
@@ -1251,7 +1552,7 @@ def propagator_weighted_sum(values, tree,
             prop.e = np.sqrt(w[0] * left_prop.e**2 + w[1] * right_prop.e**2)
         else:
             prop.e = None
-        node.add_property(prop)
+        node[prop.name] = prop
 
 
 def weights_by_size(left_node, right_node):

@@ -3,6 +3,8 @@ from contextlib import closing
 from functools import partial
 import multiprocessing
 import numpy as np
+import scipy
+from scipy.stats import zscore
 from scipy.spatial.distance import squareform
 from MDAnalysis.analysis.rms import rmsd as find_rmsd
 
@@ -130,3 +132,55 @@ def distance_submatrix(dist_mat, indexes):
     if dist_mat.ndim == 1:
         subm = squareform(subm)
     return subm
+
+
+def generate_distance_matrix(feature_vectors, weights=None,
+                             func1d=zscore, func1d_args=None,
+                             func1d_kwargs=None):
+    r"""
+    Calculate a distance matrix between measurements, based on
+    features of the measurements
+
+    Each measurement is characterized by a set of features, here
+    implemented as a vector. Thus, we sample each feature vector-item
+    a number of times equal to the number of measurements.
+
+    Distance `d` between two feature vectors `f` and `g` given weights `w`
+        `d**2 = sum_i w_i * (f_i - g_i)**2
+
+    Parameters
+    ----------
+    feature_vectors: list
+        List of feature vectors, one vector for each measurement
+    weights: list
+        List of feature weight vectors, one for each measurement
+    func1d: function
+        Apply this function to the set of values obtained for each
+        feature vector-item. The size of the set is number of
+        measurements. The default function transforms the
+        values in each feature vector-item set such that the set
+        has zero mean and unit standard deviation.
+    func1d_args: list
+        Positional arguments to func1D
+    func1d_kwargs: dict
+        Optional arguments for func1D
+    Returns
+    -------
+    numpy.ndarray
+        Distance matrix in vector-form distance
+    """
+    if len(set([len(fv) for fv in feature_vectors])) > 1:
+        raise RuntimeError('features vectors have different sizes')
+    xyz = np.array(feature_vectors)  # shape=(#vectors, #features)
+
+    # Apply func1D to each feature vector-item set (axis 0 of array xyz)
+    fargs = [] if func1d_args is None else list(func1d_args)
+    fkwargs = {} if func1d_kwargs is None else dict(func1d_kwargs)
+    xyz = np.apply_along_axis(func1d, 0, xyz, *fargs, **fkwargs)
+    # weight each feature vector
+    if weights is not None:
+        if len(weights) != len(feature_vectors):
+            raise RuntimeError('Number of weight vectors different than '
+                               'number of feature vectors')
+        xyz *= np.array(weights)
+    return squareform(scipy.spatial.distance_matrix(xyz, xyz))
