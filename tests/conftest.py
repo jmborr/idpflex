@@ -106,14 +106,17 @@ def saxs_benchmark():
         'crysol_pdb': absolute path to file.
         'crysol_int': absolute path to file.
         'crysol_xtc': absolute path to file.
+        'frame_profile': absolute path to file.
     """
 
     crysol_file = os.path.join(data_dir, 'saxs', 'crysol.dat')
     crysol_pdb = os.path.join(data_dir, 'saxs', 'md_0_1.pdb')
     crysol_int = os.path.join(data_dir, 'saxs', 'md_0_100.int')
     crysol_xtc = os.path.join(data_dir, 'saxs', 'md_0_1_noPBC.xtc')
+    frame_profile = os.path.join(data_dir, 'saxs', 'trajectory_3_profile.dat')
     return dict(crysol_file=crysol_file, crysol_pdb=crysol_pdb,
-                crysol_int=crysol_int, crysol_xtc=crysol_xtc)
+                crysol_int=crysol_int, crysol_xtc=crysol_xtc,
+                frame_profile=frame_profile)
 
 
 @pytest.fixture(scope='session')
@@ -130,6 +133,7 @@ def sans_benchmark(request):
         'cryson_pdb': absolute path to file.
         'cryson_int': absolute path to file.
         'cryson_xtc': absolute path to file.
+        'frame_profile': absolute path to file.
     """
 
     # setup or initialization
@@ -153,13 +157,15 @@ def sans_benchmark(request):
     cryson_pdb = os.path.join(data_dir, 'saxs', 'md_0_1.pdb')
     cryson_int = os.path.join(data_dir, 'sans', 'md_0_100.int')
     cryson_xtc = os.path.join(data_dir, 'saxs', 'md_0_1_noPBC.xtc')
+    frame_profile = os.path.join(data_dir, 'sans', 'trajectory_3_profile.dat')
 
     def teardown():
         handle.close()
     request.addfinalizer(teardown)
     return dict(profiles=handle, property_list=values,
                 tree_with_no_property=tree, cryson_pdb=cryson_pdb,
-                cryson_int=cryson_int, cryson_xtc=cryson_xtc)
+                cryson_int=cryson_int, cryson_xtc=cryson_xtc,
+                frame_profile=frame_profile)
 
 
 @pytest.fixture(scope='session')
