@@ -177,6 +177,9 @@ def generate_distance_matrix(feature_vectors, weights=None,
     fargs = [] if func1d_args is None else list(func1d_args)
     fkwargs = {} if func1d_kwargs is None else dict(func1d_kwargs)
     xyz = np.apply_along_axis(func1d, 0, xyz, *fargs, **fkwargs)
+    # Expect NaN in the first column if normalized to 0
+    if all([f[0] == feature_vectors[0][0] for f in feature_vectors]):
+        xyz[:, 0] = feature_vectors[0][0]
     # weight each feature vector
     if weights is not None:
         if len(weights) != len(feature_vectors):

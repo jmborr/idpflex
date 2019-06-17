@@ -4,6 +4,7 @@ import tempfile
 import fnmatch
 import functools
 import numpy as np
+import scipy
 import numbers
 from collections import OrderedDict
 import matplotlib as mpl
@@ -34,6 +35,13 @@ class PropertyDict(object):
             self._properties.update({p.name: p for p in properties})
 
     def __iter__(self):
+        r"""
+        Mimic a dictionary.
+
+        Returns
+        -------
+        iter(dict_keys of `_properties`)
+        """
         return iter(self._properties.keys())
 
     def __getitem__(self, name):
@@ -49,7 +57,7 @@ class PropertyDict(object):
         -------
         property object, or `None` if no property is found with *name*
         """
-        self._properties.get(name, None)
+        return self._properties.get(name, None)
 
     def __setitem__(self, name, value):
         r"""
@@ -63,9 +71,17 @@ class PropertyDict(object):
         """
         self._properties[name] = value
 
+    def __len__(self):
+        r"""Mimic a dict length.
+
+        Returns
+        -------
+        The number of properties in the dict.
+        """
+        return len(self._properties)
+
     def get(self, name, default=None):
-        r"""
-        Mimic get method of a dictionary
+        r"""Mimic get method of a dictionary.
 
         Parameters
         ----------
@@ -111,42 +127,44 @@ class PropertyDict(object):
         """
         return self._properties.values()
 
-    def feature_vector(self, names=None):
+    @property
+    def feature_vector(self):
         r"""
-        Feature vector for the specified sequence of names.
+        Feature vector for the property dict.
 
         The feature vector is a concatenation of the feature vectors for
         each of the properties and the concatenation follows the order of
-        names.
-
-        If names is None, return all features in the property dict in the
-        order of insertion.
-
-        Parameters
-        ----------
-        names: list
-            List of property names
+        insertion.
 
         Returns
         -------
         numpy.ndarray
         """
-        if names is None:
-            return np.concatenate([prop.feature_vector
-                                   for prop in self.values()])
-        return np.concatenate([self._properties[n].feature_vector
-                               for n in names])
+        return np.concatenate([prop.feature_vector
+                               for prop in self.values()])
 
-    def feature_weights(self, names=None):
+    @property
+    def feature_weights(self):
         r"""
-        Feature vector weights for the specified sequence of names.
+        Feature vector weights for the property group.
 
         The feature vector weights is a concatenation of the feature vectors
         weights for each of the properties and the concatenation follows the
-        order of names.
-
-        If names is None, return all features in the property dict in the
         order of insertion.
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return np.concatenate([prop.feature_weights
+                               for prop in self.values()])
+
+    def subset(self, names=None):
+        r"""
+        Property dict for the specified sequence of names.
+
+        The subset is a dict of the properties with the same order as names.
+        If names is None, return self.
 
         Parameters
         ----------
@@ -155,13 +173,11 @@ class PropertyDict(object):
 
         Returns
         -------
-        numpy.ndarray
+        PropertyDict
         """
         if names is None:
-            return np.concatenate([prop.feature_weights
-                                   for prop in self.values()])
-        return np.concatenate([self._properties[n].feature_weights
-                               for n in names])
+            return self
+        return PropertyDict([self[name] for name in names])
 
 
 def register_as_node_property(cls, nxye):
@@ -1080,7 +1096,7 @@ class SecondaryStructureProperty(object):
         return np.sum(np.square(dp/e)) / (n * (self.n_codes - 1))
 
     def plot(self, kind='percents'):
-        r"""Plot the secondary structure of the node holding the property
+        r"""Plot the secondary structure of the node holding the property.
 
         Parameters
         ----------
@@ -1182,36 +1198,72 @@ class ProfileProperty(object):
         self.errors = errors
         self.node = None
 
+    def __len__(self):
+        r"""Return the number of points in the profile."""
+        return len(self.profile)
+
     @property
     def feature_vector(self):
         r"""
-        Each `qvalue` is interpreted as an independent feature,
-        and the related value in `profile` is a particular
-        "measured" value of that feature.
+        Each `qvalue` is interpreted as an independent feature, and the related value in `profile` is a particular "measured" value of that feature.
 
         Returns
         -------
         numpy.ndarray
-        """
+        """  # noqa: E501
         return self.profile
 
     @property
     def feature_weights(self):
         r"""
-        Weights to be used when calculating the square of the euclidean
-        distance between two feature vectors
+        Weights to be used when calculating the square of the euclidean distance between two feature vectors.
+
+        Returns
+        -------
+        numpy.ndarray
+        """  # noqa: E501
+        # return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
+        return 1 / np.sqrt(self.profile)
+        # return 1 / self.profile
+        # return np.ones(len(self.profile))
+
+    @property
+    def normalized_profile(self):
+        r"""
+        Rescaled profile to have values between 0 and 1.
 
         Returns
         -------
         numpy.ndarray
         """
-        return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
+        return self.profile/max(self.profile)
+
+    def normalize(self):
+        """Replace profile with normalized values."""
+        self.profile = self.normalized_profile
+        return self
+
+    @property
+    def interpolator(self):
+        r"""
+        Return an interpolator from the profile data.
+
+        Returns
+        -------
+        function
+        """
+        return scipy.interpolate.interp1d(self.qvalues, self.profile,
+                                          fill_value='extrapolate')
+
+    def interpolate(self, qvalues):
+        r"""Replace data with interpolated values at the specified qvalues."""
+        self.profile = self.interpolator(qvalues)
+        self.qvalues = qvalues.copy()
+        return self
 
 
 class SansLoaderMixin(object):
-    r"""Mixin class providing a set of methods to load SANS data into a
-    profile property
-    """
+    r"""Mixin class providing a set of methods to load SANS data into a profile property."""  # noqa: E501
 
     def from_sassena(self, handle, profile_key='fqt', index=0):
         """Load SANS profile from sassena output.
@@ -1244,7 +1296,7 @@ class SansLoaderMixin(object):
         return self
 
     def from_cryson_int(self, file_name):
-        r"""Load profile from a `cryson \*.int <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file
+        r"""Load profile from a `cryson \*.int <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file.
 
         Parameters
         ----------
@@ -1282,7 +1334,7 @@ class SansLoaderMixin(object):
     def from_cryson_pdb(self, file_name, command='cryson',
                         args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
                         silent=True):
-        r"""Calculate profile with cryson from a PDB file
+        r"""Calculate profile with cryson from a PDB file.
 
         Parameters
         ----------
@@ -1365,8 +1417,7 @@ class SansLoaderMixin(object):
 
 
 class SansProperty(ProfileProperty, SansLoaderMixin):
-    r"""Implementation of a node property for SANS data
-    """
+    r"""Implementation of a node property for SANS data."""
 
     default_name = 'sans'
 
@@ -1377,12 +1428,10 @@ class SansProperty(ProfileProperty, SansLoaderMixin):
 
 
 class SaxsLoaderMixin(object):
-    r"""Mixin class providing a set of methods to load X-ray data into a
-    profile property
-    """
+    r"""Mixin class providing a set of methods to load X-ray data into a profile property."""  # noqa: E501
 
     def from_crysol_int(self, file_name):
-        r"""Load profile from a `crysol \*.int <https://www.embl-hamburg.de/biosaxs/manuals/crysol.html#output>`_ file
+        r"""Load profile from a `crysol \*.int <https://www.embl-hamburg.de/biosaxs/manuals/crysol.html#output>`_ file.
 
         Parameters
         ----------
@@ -1420,7 +1469,7 @@ class SaxsLoaderMixin(object):
     def from_crysol_pdb(self, file_name, command='crysol',
                         args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
                         silent=True):
-        r"""Calculate profile with crysol from a PDB file
+        r"""Calculate profile with crysol from a PDB file.
 
         Parameters
         ----------

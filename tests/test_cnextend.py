@@ -27,9 +27,9 @@ class TestClusterNodeX(object):
         n[prop.name] = prop
         prop2 = ScalarProperty(name='some_prop2', y=2)
         n[prop2.name] = prop2
-        fv = n.property_group.feature_vector()
+        fv = n.property_group.feature_vector
         assert_array_equal(fv, np.array([4, 2]))
-        ws = n.property_group.feature_weights()
+        ws = n.property_group.feature_weights
         assert_array_equal(ws, np.array([1, 1]))
 
     def test_leafs(self, benchmark):
