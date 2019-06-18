@@ -201,12 +201,12 @@ def sans_fit(sans_benchmark):
     coefficients = dict()
     nodes = tree.nodes_at_depth(depth)
     n_nodes = 1 + depth  # depth=0 corresponds to the root node (nclusters=1)
-    q_values = (tree.root[name].x[:-1] + tree.root[name].x[1:]) / 2  # midpoint
+    q_values = tree.root[name].x
     profile = np.zeros(len(q_values))
     for i in range(n_nodes):
         coefficients[nodes[i].id] = coeffs[i]
         p = nodes[i][name]
-        profile += coeffs[i] * (p.y[:-1] + p.y[1:]) / 2
+        profile += coeffs[i] * p.y
     background = 0.05 * max(profile)  # flat background
     profile += background
     experiment_property = idprop.SansProperty(name=name,

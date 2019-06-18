@@ -3,9 +3,11 @@ import numpy as np
 import pytest
 import tempfile
 import shutil
+import scipy
 
 from idpflex import properties as ps
 from idpflex.properties import SecondaryStructureProperty as SSP
+from numpy.testing import assert_array_equal
 
 
 class TestRegisterDecorateProperties(object):
@@ -243,6 +245,37 @@ class TestProfileProperty(object):
         assert np.array_equal(profile_prop.x, v)
         assert np.array_equal(profile_prop.y, 10*v)
         assert np.array_equal(profile_prop.e, 0.1*v)
+
+    def test_feature_vector_and_weights(self):
+        v = np.arange(9)
+        profile_prop = ps.ProfileProperty(name='foo', qvalues=v, profile=10*v,
+                                          errors=0.1*v)
+        assert_array_equal(profile_prop.feature_vector, profile_prop.profile)
+        assert_array_equal(profile_prop.feature_weights,
+                           1/np.sqrt(profile_prop.profile))
+
+    def test_interpolation(self):
+        x1 = np.random.rand(10)
+        # Gaurantee values outside of the range to test extrapolation
+        x2 = x1 + abs(np.random.rand(10))
+        y1 = x1**2
+        y2 = scipy.interpolate.interp1d(x1, y1, fill_value='extrapolate')(x2)
+        prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
+                                  errors=0.1*y1)
+        assert_array_equal(y2, prop.interpolator(x2))
+        prop.interpolate(x2)
+        assert_array_equal(y2, prop.profile)
+        assert_array_equal(x2, prop.qvalues)
+
+    def test_normalization(self):
+        x1 = np.random.rand(10)
+        y1 = x1**2
+        y2 = y1/max(y1)
+        prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
+                                  errors=0.1*y1)
+        assert_array_equal(y2, prop.normalized_profile)
+        prop.normalize()
+        assert_array_equal(y2, prop.profile)
 
 
 class TestSansProperty(object):

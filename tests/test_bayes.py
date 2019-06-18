@@ -9,10 +9,9 @@ def test_model_at_node(sans_fit):
     tree = sans_fit['tree']
     mod = bayes.model_at_node(tree.root, sans_fit['property_name'])
     prop = tree.root[sans_fit['property_name']]
-    q_values = (prop.x[:-1] + prop.x[1:]) / 2  # midpoints
     params = mod.make_params()
-    y = mod.eval(params, x=q_values)
-    assert_array_almost_equal(y, (prop.y[:-1] + prop.y[1:]) / 2, decimal=1)
+    assert_array_almost_equal(mod.eval(params, x=prop.qvalues),
+                              prop.y, decimal=1)
 
 
 def test_model_at_depth(sans_fit):
