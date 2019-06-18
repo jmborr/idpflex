@@ -10,8 +10,45 @@ from idpflex.properties import SecondaryStructureProperty as SSP
 from numpy.testing import assert_array_equal
 
 
-class TestRegisterDecorateProperties(object):
+class TestPropertyDict(object):
+    def test_mimic_dict(self):
+        props = {'profile': ps.ProfileProperty(name='profile',
+                                               profile=np.arange(10),
+                                               qvalues=np.arange(10)*5,
+                                               errors=np.arange(10)*.01),
+                 'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2)}
+        scalar2 = ps.ScalarProperty(name='scalar2', x=1, y=2, e=3)
+        propdict = ps.PropertyDict(properties=props.values())
+        assert [k for k in propdict] == [k for k in props]
+        assert propdict['profile'] == props['profile']
+        propdict['scalar2'] = scalar2
+        assert propdict['scalar2'] == scalar2
+        propdict = propdict.subset(names=props.keys())
+        assert len(propdict) == len(props)
+        assert propdict.get('not_real', default=5) == 5
+        assert [k for k in propdict.keys()] == [k for k in props.keys()]
+        assert [v for v in propdict.values()] == [v for v in props.values()]
+        assert [i for i in propdict.items()] == [i for i in props.items()]
 
+    def test_feature_vector_domain_weights(self):
+        props = {'profile': ps.ProfileProperty(name='profile',
+                                               profile=np.arange(10),
+                                               qvalues=np.arange(10)*5,
+                                               errors=np.arange(10)*.01),
+                 'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2)}
+        propdict = ps.PropertyDict(properties=props.values())
+        assert_array_equal(propdict.feature_vector,
+                           np.concatenate([p.feature_vector
+                                           for p in props.values()]))
+        assert_array_equal(propdict.feature_domain,
+                           np.concatenate([p.feature_domain
+                                           for p in props.values()]))
+        assert_array_equal(propdict.feature_weights,
+                           np.concatenate([p.feature_weights
+                                           for p in props.values()]))
+
+
+class TestRegisterDecorateProperties(object):
     def test_register_as_node_property(self):
         class SomeProperty(object):
             def __init__(self):
@@ -70,6 +107,15 @@ class TestScalarProperty(object):
         root_prop = benchmark['tree'].root['sc']
         ax = root_prop.plot(kind='histogram', errors=True, bins=1)
         assert ax.patches[0]._height == benchmark['nleafs']
+
+    def test_feature_vector_domain_and_weights(self):
+        prop = ps.ScalarProperty(name='foo', x=0, y=1, e=2)
+        assert prop.x == 0
+        assert prop.y == 1
+        assert prop.e == 2
+        assert_array_equal(prop.feature_vector, np.array([prop.y]))
+        assert_array_equal(prop.feature_domain, np.array([prop.x]))
+        assert_array_equal(prop.feature_weights, np.array([1]))
 
 
 class TestAsphericity(object):
@@ -246,11 +292,12 @@ class TestProfileProperty(object):
         assert np.array_equal(profile_prop.y, 10*v)
         assert np.array_equal(profile_prop.e, 0.1*v)
 
-    def test_feature_vector_and_weights(self):
+    def test_feature_vector_domain_and_weights(self):
         v = np.arange(9)
         profile_prop = ps.ProfileProperty(name='foo', qvalues=v, profile=10*v,
                                           errors=0.1*v)
         assert_array_equal(profile_prop.feature_vector, profile_prop.profile)
+        assert_array_equal(profile_prop.feature_domain, profile_prop.qvalues)
         assert_array_equal(profile_prop.feature_weights,
                            1/np.sqrt(profile_prop.profile))
 

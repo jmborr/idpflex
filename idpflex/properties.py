@@ -99,7 +99,7 @@ class PropertyDict(object):
 
     def keys(self):
         r"""
-        Mimic keys method of a dictionary
+        Mimic keys method of a dictionary.
 
         Returns
         -------
@@ -109,7 +109,7 @@ class PropertyDict(object):
 
     def items(self):
         r"""
-        Mimic items method of a dictionary
+        Mimic items method of a dictionary.
 
         Returns
         -------
@@ -119,7 +119,7 @@ class PropertyDict(object):
 
     def values(self):
         r"""
-        Mimic values method of a dictionary
+        Mimic values method of a dictionary.
 
         Returns
         -------
@@ -141,6 +141,22 @@ class PropertyDict(object):
         numpy.ndarray
         """
         return np.concatenate([prop.feature_vector
+                               for prop in self.values()])
+
+    @property
+    def feature_domain(self):
+        r"""
+        Feature domain for the property dict.
+
+        The feature domain is a concatenation of the feature domains for
+        each of the properties and the concatenation follows the order of
+        insertion.
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return np.concatenate([prop.feature_domain
                                for prop in self.values()])
 
     @property
@@ -300,11 +316,16 @@ class ScalarProperty(object):
         return np.array([self.y, ])
 
     @property
+    def feature_domain(self):
+        """Return the x value as the input domain of the feature."""
+        return np.array([self.x])
+
+    @property
     def feature_weights(self):
         return np.array([1])
 
     def histogram(self, bins=10, errors=False, **kwargs):
-        r"""Histogram of values for the leaf nodes
+        r"""Histogram of values for the leaf nodes.
 
         Parameters
         ----------
@@ -1212,6 +1233,17 @@ class ProfileProperty(object):
         numpy.ndarray
         """  # noqa: E501
         return self.profile
+
+    @property
+    def feature_domain(self):
+        r"""
+        The `qvalue` corresponding to each of the values in the feature vector.
+
+        Returns
+        -------
+        numpy.ndarray
+        """  # noqa: E501
+        return self.qvalues
 
     @property
     def feature_weights(self):

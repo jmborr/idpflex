@@ -32,8 +32,13 @@ class TabulatedFunctionModel(Model):
         kwargs.update({'prefix': prefix, 'missing': missing})
         self._interpolator = interp1d(xdata, ydata, kind=interpolator_kind)
         self._ydata = ydata
+        self._xdata = xdata
 
         def tabulate(x, amplitude, center):
+            if not np.allclose(x, self._xdata):
+                raise ValueError("Attempting to fit with experimental xdata\
+                                   that does not match the xdata of the model.\
+                                   Interpolate before or after.")
             return amplitude * self._ydata
         #     return amplitude * self._interpolator(x - center)
         # def tabulate(x, amplitude):
@@ -82,6 +87,11 @@ class MultiPropertyModel(Model):
         number_of_structures = len(property_groups)
 
         def func(x, **params):
+            if not all([np.allclose(x, p.feature_domain)
+                        for p in property_groups]):
+                raise ValueError("Attempting to fit with experimental xdata\
+                                   that does not match the xdata of the model.\
+                                   Interpolate before or after.")
             ms = list(params.values())[:number_of_structures]
             cs = list(params.values())[-number_of_constants:]
             mod = sum([ms[i] * pg.feature_vector  # *pg.feature_weights
@@ -237,7 +247,7 @@ def fit_at_depth_multiproperty(tree, experiment, depth):
     params = m.make_params()
     return m.fit(experiment.feature_vector,
                  weights=experiment.feature_weights,
-                 x=experiment.feature_vector, params=params)
+                 x=experiment.feature_domain, params=params)
 
 
 def fit_to_depth_multiproperty(tree, experiment, max_depth):
