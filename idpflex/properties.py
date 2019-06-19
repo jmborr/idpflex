@@ -1237,7 +1237,7 @@ class ProfileProperty(object):
     @property
     def feature_domain(self):
         r"""
-        The `qvalue` corresponding to each of the values in the feature vector.
+        Return `qvalue` corresponding to each of the values in the feature vector.
 
         Returns
         -------
@@ -1254,10 +1254,10 @@ class ProfileProperty(object):
         -------
         numpy.ndarray
         """  # noqa: E501
-        # return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
-        return 1 / np.sqrt(self.profile)
-        # return 1 / self.profile
-        # return np.ones(len(self.profile))
+        if self.e is None or np.allclose(np.zeros(len(self.y)), self.e):
+            return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
+        ws = self.profile / self.errors
+        return ws / np.linalg.norm(ws)
 
     @property
     def normalized_profile(self):
@@ -1287,9 +1287,22 @@ class ProfileProperty(object):
         return scipy.interpolate.interp1d(self.qvalues, self.profile,
                                           fill_value='extrapolate')
 
+    @property
+    def error_interpolator(self):
+        r"""
+        Return an interpolator from the profile data.
+
+        Returns
+        -------
+        function
+        """
+        return scipy.interpolate.interp1d(self.qvalues, self.errors,
+                                          fill_value='extrapolate')
+
     def interpolate(self, qvalues):
         r"""Replace data with interpolated values at the specified qvalues."""
         self.profile = self.interpolator(qvalues)
+        self.errors = self.error_interpolator(qvalues)
         self.qvalues = qvalues.copy()
         return self
 

@@ -1,5 +1,6 @@
 # from qef.models import TabulatedFunctionModel
 from lmfit.models import (Model, ConstantModel, index_of)
+from lmfit import Parameter
 from scipy.interpolate import interp1d
 import numpy as np
 from idpflex.properties import ScalarProperty
@@ -83,32 +84,49 @@ class MultiPropertyModel(Model):
         if len({len(pg) for pg in property_groups}) > 1:
             raise ValueError("Property groups must be same length")
 
-        number_of_constants = len(property_groups[0])
-        number_of_structures = len(property_groups)
-
         def func(x, **params):
             if not all([np.allclose(x, p.feature_domain)
                         for p in property_groups]):
                 raise ValueError("Attempting to fit with experimental xdata\
                                    that does not match the xdata of the model.\
                                    Interpolate before or after.")
-            ms = list(params.values())[:number_of_structures]
-            cs = list(params.values())[-number_of_constants:]
-            mod = sum([ms[i] * pg.feature_vector  # *pg.feature_weights
+            names = [p.name for p in property_groups[0].values()]
+            ps = [params[f'p_{i}'] for i in range(len(property_groups))]
+            ms = [params[f'scale_{name}'] for name in names]
+            cs = [params[f'const_{name}'] for name in names]
+            # start with the right proportion of each structure
+            mod = sum([ps[i] * pg.feature_vector
                        for i, pg in enumerate(property_groups)])
-            mod += np.concatenate([cs[i]*np.ones(len(p))  # *p.feature_weights
+            # scale each property of the model by the appropriate factor
+            scaling = np.concatenate([ms[i]*np.ones(len(p))
+                                      for i, p in
+                                      enumerate(property_groups[0].values())])
+            mod *= scaling
+            # finally, add a constant for each property of the model
+            mod += np.concatenate([cs[i]*np.ones(len(p))
                                    for i, p in
                                    enumerate(property_groups[0].values())])
             return mod
 
         super(MultiPropertyModel, self).__init__(func, **kwargs)
-        for i in range(len(property_groups)):
-            self.set_param_hint(f'group_{i}', min=0, value=1)
+        self.params = self.make_params()
+        for i in range(1, len(property_groups)):
+            self.params.add(f'p_{i}', vary=True, min=0, max=1,
+                            value=1.0/len(property_groups))
+        eq = '1-('+'+'.join([f'p_{j}'
+                             for j in range(1, len(property_groups))])+')'
+        if len(property_groups) == 1:
+            self.params.add('p_0', value=1, min=0, max=1)
+        else:
+            self.params.add('p_0', value=1, min=0, max=1, expr=eq)
         for prop in property_groups[0].values():
             if isinstance(prop, ScalarProperty):
-                self.set_param_hint(f'const_{prop.name}', value=0, vary=False)
+                self.params[f'const_{prop.name}'] = Parameter(value=0,
+                                                              vary=False)
+                self.params[f'scale_{prop.name}'] = Parameter(value=1)
             else:
-                self.set_param_hint(f'const_{prop.name}', value=1)
+                self.params[f'const_{prop.name}'] = Parameter(value=0)
+                self.params[f'scale_{prop.name}'] = Parameter(value=1)
 
 
 def model_at_node(node, property_name):
@@ -188,8 +206,7 @@ def fit_at_depth(tree, experiment, property_name, depth):
     params = mod.make_params()
     return mod.fit(experiment.y,
                    x=experiment.x,
-                   # weights=1.0 / experiment.e,
-                   weights=experiment.feature_weights,
+                   weights=1.0 / experiment.e,
                    params=params)
 
 
@@ -243,11 +260,10 @@ def fit_at_depth_multiproperty(tree, experiment, depth):
     property_names = experiment.keys()
     pgs = [node.property_group.subset(property_names)
            for node in tree.nodes_at_depth(depth)]
-    m = MultiPropertyModel(pgs)
-    params = m.make_params()
+    m = MultiPropertyModel(pgs, experiment_property_group=experiment)
     return m.fit(experiment.feature_vector,
                  weights=experiment.feature_weights,
-                 x=experiment.feature_domain, params=params)
+                 x=experiment.feature_domain, params=m.params)
 
 
 def fit_to_depth_multiproperty(tree, experiment, max_depth):
