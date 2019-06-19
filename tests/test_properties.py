@@ -7,7 +7,7 @@ import scipy
 
 from idpflex import properties as ps
 from idpflex.properties import SecondaryStructureProperty as SSP
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_almost_equal
 
 
 class TestPropertyDict(object):
@@ -298,8 +298,17 @@ class TestProfileProperty(object):
                                           errors=0.1*v)
         assert_array_equal(profile_prop.feature_vector, profile_prop.profile)
         assert_array_equal(profile_prop.feature_domain, profile_prop.qvalues)
-        assert_array_equal(profile_prop.feature_weights,
-                           1/np.sqrt(profile_prop.profile))
+        ws = profile_prop.profile/profile_prop.errors
+        ws[~np.isfinite(ws)] = profile_prop.profile[~np.isfinite(ws)]
+        ws = ws/np.linalg.norm(ws)
+        assert_array_equal(profile_prop.feature_weights, ws)
+        assert_almost_equal(np.linalg.norm(profile_prop.feature_weights), 1)
+        # mimic reading from a crysol/cryson int
+        prof_prop2 = ps.ProfileProperty(name='foo', qvalues=v, profile=10*v,
+                                        errors=np.zeros(len(v)))
+        ws2 = np.ones(len(prof_prop2.profile))/len(prof_prop2.profile)**.5
+        assert_array_equal(prof_prop2.feature_weights, ws2)
+        assert_almost_equal(np.linalg.norm(prof_prop2.feature_weights), 1)
 
     def test_interpolation(self):
         x1 = np.random.rand(10)

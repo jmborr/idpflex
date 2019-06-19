@@ -98,12 +98,12 @@ class MultiPropertyModel(Model):
             mod = sum([ps[i] * pg.feature_vector
                        for i, pg in enumerate(property_groups)])
             # scale each property of the model by the appropriate factor
-            scaling = np.concatenate([ms[i]*np.ones(len(p))
+            scaling = np.concatenate([ms[i]*np.ones(len(p.feature_vector))
                                       for i, p in
                                       enumerate(property_groups[0].values())])
             mod *= scaling
             # finally, add a constant for each property of the model
-            mod += np.concatenate([cs[i]*np.ones(len(p))
+            mod += np.concatenate([cs[i]*np.ones(len(p.feature_vector))
                                    for i, p in
                                    enumerate(property_groups[0].values())])
             return mod

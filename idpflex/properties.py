@@ -1257,6 +1257,7 @@ class ProfileProperty(object):
         if self.e is None or np.allclose(np.zeros(len(self.y)), self.e):
             return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
         ws = self.profile / self.errors
+        ws[~np.isfinite(ws)] = self.profile[~np.isfinite(ws)]
         return ws / np.linalg.norm(ws)
 
     @property
