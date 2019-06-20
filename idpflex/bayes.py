@@ -93,7 +93,8 @@ class MultiPropertyModel(Model):
             names = [p.name for p in property_groups[0].values()]
             ps = [params[f'p_{i}'] for i in range(len(property_groups))]
             ms = [params[f'scale_{name}'] for name in names]
-            cs = [params[f'const_{name}'] for name in names]
+            cs = [params[f'const_{name}'] for name in names
+                  if not isinstance(property_groups[0][name], ScalarProperty)]
             # start with the right proportion of each structure
             mod = sum([ps[i] * pg.feature_vector
                        for i, pg in enumerate(property_groups)])
@@ -104,8 +105,11 @@ class MultiPropertyModel(Model):
             mod *= scaling
             # finally, add a constant for each property of the model
             mod += np.concatenate([cs[i]*np.ones(len(p.feature_vector))
+                                   if not isinstance(p, ScalarProperty)
+                                   else np.ones(len(p.feature_vector))
                                    for i, p in
-                                   enumerate(property_groups[0].values())])
+                                   enumerate(property_groups[0].values())
+                                   ])
             return mod
 
         super(MultiPropertyModel, self).__init__(func, **kwargs)
@@ -120,13 +124,9 @@ class MultiPropertyModel(Model):
         else:
             self.params.add('p_0', value=1, min=0, max=1, expr=eq)
         for prop in property_groups[0].values():
-            if isinstance(prop, ScalarProperty):
-                self.params[f'const_{prop.name}'] = Parameter(value=0,
-                                                              vary=False)
-                self.params[f'scale_{prop.name}'] = Parameter(value=1)
-            else:
+            self.params[f'scale_{prop.name}'] = Parameter(value=1)
+            if not isinstance(prop, ScalarProperty):
                 self.params[f'const_{prop.name}'] = Parameter(value=0)
-                self.params[f'scale_{prop.name}'] = Parameter(value=1)
 
 
 def model_at_node(node, property_name):
@@ -238,50 +238,72 @@ def fit_to_depth(tree, experiment, property_name, max_depth=5):
             depth in range(max_depth + 1)]
 
 
-def fit_at_depth_multiproperty(tree, experiment, depth):
-    r"""Fit at a particular tree depth from the root node.
-
-    Fit experiment against the properties stored in the nodes.
+def create_at_depth_multiproperty(tree, depth, experiment=None):
+    r"""Create a model at a particular tree depth from the root node.
 
     Parameters
     ----------
     tree : :class:`~idpflex.cnextend.Tree`
         Hierarchical tree
-    experiment : PropertyDict
-        A PropertyDict containing the experimental data.
     depth : int
         Fit at this depth
+    experiment : PropertyDict, optional
+        A PropertyDict containing the experimental data.
+        If provided, will use only the keys in the experiment.
 
     Returns
     -------
     :class:`~lmfit.model.ModelResult`
-        Results of the fit
+        Model for the depth
     """
-    property_names = experiment.keys()
+    property_names = experiment.keys() if experiment is not None else None
     pgs = [node.property_group.subset(property_names)
            for node in tree.nodes_at_depth(depth)]
-    m = MultiPropertyModel(pgs, experiment_property_group=experiment)
-    return m.fit(experiment.feature_vector,
-                 weights=experiment.feature_weights,
-                 x=experiment.feature_domain, params=m.params)
+    return MultiPropertyModel(pgs, experiment_property_group=experiment)
 
 
-def fit_to_depth_multiproperty(tree, experiment, max_depth):
-    r"""Fit to a particular tree depth from the root node.
+def create_to_depth_multiproperty(tree, max_depth, experiment=None):
+    r"""Create models to a particular tree depth from the root node.
 
     Parameters
     ----------
     tree : :class:`~idpflex.cnextend.Tree`
         Hierarchical tree
-    experiment : PropertyDict
-        A PropertyDict containing the experimental data.
     max_depth : int
         Fit at each depth up to (and including) max_depth
+    experiment : PropertyDict, optional
+        A PropertyDict containing the experimental data.
+
+    Returns
+    -------
+    list of :class:`~lmfit.model.ModelResult`
+        Models for each depth
+    """
+    return [create_at_depth_multiproperty(tree, i, experiment)
+            for i in range(max_depth + 1)]
+
+
+def fit_multiproperty_model(model, experiment):
+    """Apply a fit to a particular model.
+
+    Parameters
+    ----------
+    model: :class:`~lmfit.model.ModelResult`
+        Model to be fit
+    experiment: :class:`~idpflex.properties.PropertyDict`
+        Set of experimental properties to be fit.
 
     Returns
     -------
     :class:`~lmfit.model.ModelResult`
-        Results of the fit
+        The fit of the model
     """
-    return [fit_at_depth_multiproperty(tree, experiment, i)
-            for i in range(max_depth + 1)]
+    return model.fit(experiment.feature_vector,
+                     weights=experiment.feature_weights,
+                     x=experiment.feature_domain, params=model.params)
+
+
+def fit_multiproperty_models(models, experiment):
+    """Apply fitting to a list of models."""
+    return [fit_multiproperty_model(model, experiment)
+            for model in models]

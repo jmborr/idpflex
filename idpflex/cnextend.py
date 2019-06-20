@@ -189,20 +189,6 @@ class Tree(object):
         return len(self._nodes)
 
     @property
-    def height(self):
-        """Return the height of the tree."""
-        def h(node):
-            lh = rh = 1
-            left = node.get_left()
-            right = node.get_right()
-            if not left.is_leaf():
-                lh = h(left)
-            if not right.is_leaf():
-                rh = h(right)
-            return max(lh, rh) + 1
-        return h(self.root)
-
-    @property
     def leafs(self):
         r"""
 

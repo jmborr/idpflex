@@ -51,7 +51,8 @@ def test_fit_at_depth_multi(sans_fit):
     tree = sans_fit['tree']
     exp = sans_fit['experiment_property']
     exp_pd = properties.PropertyDict([exp])
-    fit = bayes.fit_at_depth_multiproperty(tree, exp_pd, sans_fit['depth'])
+    mod = bayes.create_at_depth_multiproperty(tree, sans_fit['depth'])
+    fit = bayes.fit_multiproperty_model(mod, exp_pd)
     assert fit.chisqr < 1e-10
 
 
@@ -59,7 +60,8 @@ def test_fit_to_depth_multi(sans_fit):
     tree = sans_fit['tree']
     exp = sans_fit['experiment_property']
     exp_pd = properties.PropertyDict([exp])
-    fits = bayes.fit_to_depth_multiproperty(tree, exp_pd, max_depth=7)
+    mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+    fits = bayes.fit_multiproperty_models(mods, exp_pd)
     chi2 = np.array([fit.chisqr for fit in fits])
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
@@ -72,9 +74,10 @@ def test_multiproperty_fit(sans_fit):
               for i in range(len(tree.leafs))]
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
-    fits = bayes.fit_to_depth_multiproperty(tree, exp_pd, max_depth=7)
+    models = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+    fits = bayes.fit_multiproperty_models(models, exp_pd)
     chi2 = np.array([fit.chisqr for fit in fits])
-    assert fits[0].best_values['const_foo'] == 0
+    assert 'const_foo' not in fits[0].best_values.keys()
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
 
@@ -89,14 +92,16 @@ def test_fit_bad_input(sans_fit):
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
     with pytest.raises(ValueError):
-        bayes.fit_to_depth_multiproperty(tree, exp_pd, max_depth=7)
+        models = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+        bayes.fit_multiproperty_models(models, exp_pd)
     with pytest.raises(ValueError):
-        bayes.fit_to_depth_multiproperty(tree, exp_pd.subset([name]),
-                                         max_depth=7)
+        mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+        bayes.fit_multiproperty_models(mods, exp_pd.subset([name]))
     with pytest.raises(ValueError):
         left_child = tree.root.get_left()
         left_child.property_group = left_child.property_group.subset([name])
-        bayes.fit_to_depth_multiproperty(tree, exp_pd, max_depth=7)
+        mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+        bayes.fit_multiproperty_models(mods, exp_pd)
 
     p_exp = sans_fit['experiment_property']
     with pytest.raises(ValueError):
