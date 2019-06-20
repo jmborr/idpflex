@@ -317,15 +317,17 @@ class ScalarProperty(object):
 
     @property
     def feature_vector(self):
+        """Return the y value as the feature vector of the property."""
         return np.array([self.y, ])
 
     @property
     def feature_domain(self):
-        """Return the x value as the input domain of the feature."""
+        """Return the x value as the input domain of the property."""
         return np.array([self.x])
 
     @property
     def feature_weights(self):
+        """Return the 1 as the weight of the property components."""
         return np.array([1])
 
     def histogram(self, bins=10, errors=False, **kwargs):

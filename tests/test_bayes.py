@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 import pytest
 
 from idpflex import bayes
@@ -53,7 +53,11 @@ def test_fit_at_depth_multi(sans_fit):
     exp_pd = properties.PropertyDict([exp])
     mod = bayes.create_at_depth_multiproperty(tree, sans_fit['depth'])
     fit = bayes.fit_multiproperty_model(mod, exp_pd)
+    assert fit.weights is None
     assert fit.chisqr < 1e-10
+    fit2 = bayes.fit_multiproperty_model(mod, exp_pd,
+                                         weights=exp_pd.feature_weights)
+    assert_array_equal(fit2.weights, exp_pd.feature_weights)
 
 
 def test_fit_to_depth_multi(sans_fit):

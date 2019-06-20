@@ -1,5 +1,5 @@
 # from qef.models import TabulatedFunctionModel
-from lmfit.models import (Model, ConstantModel, index_of)
+from lmfit.models import (Model, ConstantModel)
 from lmfit import Parameter
 from scipy.interpolate import interp1d
 import numpy as np
@@ -48,27 +48,30 @@ class TabulatedFunctionModel(Model):
         self.set_param_hint('amplitude', min=0, value=1)
         # self.set_param_hint('center', value=0)
 
-    def guess(self, y, x=None, **kwargs):
-        r"""Estimate fitting parameters from input data.
+    # I would remove since it cannot be applied to composite models.
+    # if the same functionality was desired, place it in the initialization
+    # or in a utility function
+    # def guess(self, y, x=None, **kwargs):
+    #     r"""Estimate fitting parameters from input data.
 
-        Parameters
-        ----------
-        y : :class:`~numpy:numpy.ndarray`
-            Values to fit to, e.g., SANS or SAXS intensity values
-        x : :class:`~numpy:numpy.ndarray`
-            independent variable, e.g., momentum transfer
+    #     Parameters
+    #     ----------
+    #     y : :class:`~numpy:numpy.ndarray`
+    #         Values to fit to, e.g., SANS or SAXS intensity values
+    #     x : :class:`~numpy:numpy.ndarray`
+    #         independent variable, e.g., momentum transfer
 
-        Returns
-        -------
-        :class:`~lmfit.parameter.Parameters`
-            Parameters with estimated initial values.
-        """
-        amplitude = 1.0
-        center = 0.0
-        if x is not None:
-            center = x[index_of(y, max(y))]  # assumed peak within domain x
-            amplitude = max(y)
-        return self.make_params(amplitude=amplitude, center=center)
+    #     Returns
+    #     -------
+    #     :class:`~lmfit.parameter.Parameters`
+    #         Parameters with estimated initial values.
+    #     """
+    #     amplitude = 1.0
+    #     center = 0.0
+    #     if x is not None:
+    #         center = x[index_of(y, max(y))]  # assumed peak within domain x
+    #         amplitude = max(y)
+    #     return self.make_params(amplitude=amplitude, center=center)
 
 
 class MultiPropertyModel(Model):
@@ -283,7 +286,7 @@ def create_to_depth_multiproperty(tree, max_depth, experiment=None):
             for i in range(max_depth + 1)]
 
 
-def fit_multiproperty_model(model, experiment):
+def fit_multiproperty_model(model, experiment, weights=None):
     """Apply a fit to a particular model.
 
     Parameters
@@ -298,12 +301,11 @@ def fit_multiproperty_model(model, experiment):
     :class:`~lmfit.model.ModelResult`
         The fit of the model
     """
-    return model.fit(experiment.feature_vector,
-                     weights=experiment.feature_weights,
+    return model.fit(experiment.feature_vector, weights=weights,
                      x=experiment.feature_domain, params=model.params)
 
 
-def fit_multiproperty_models(models, experiment):
+def fit_multiproperty_models(models, experiment, weights=None):
     """Apply fitting to a list of models."""
-    return [fit_multiproperty_model(model, experiment)
+    return [fit_multiproperty_model(model, experiment, weights=weights)
             for model in models]
