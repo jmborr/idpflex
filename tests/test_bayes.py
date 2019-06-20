@@ -78,5 +78,31 @@ def test_multiproperty_fit(sans_fit):
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
 
+def test_fit_bad_input(sans_fit):
+    tree = sans_fit['tree']
+    exp = sans_fit['experiment_property']
+    name = sans_fit['property_name']
+    scalar = properties.ScalarProperty(name='foo', x=1, y=1, e=1)
+    # Different x value to prompt error
+    values = [properties.ScalarProperty(name='foo', x=10, y=i, e=1)
+              for i in range(len(tree.leafs))]
+    properties.propagator_size_weighted_sum(values, tree)
+    exp_pd = properties.PropertyDict([exp, scalar])
+    with pytest.raises(ValueError):
+        bayes.fit_to_depth_multiproperty(tree, exp_pd, max_depth=7)
+    with pytest.raises(ValueError):
+        bayes.fit_to_depth_multiproperty(tree, exp_pd.subset([name]),
+                                         max_depth=7)
+    with pytest.raises(ValueError):
+        left_child = tree.root.get_left()
+        left_child.property_group = left_child.property_group.subset([name])
+        bayes.fit_to_depth_multiproperty(tree, exp_pd, max_depth=7)
+
+    p_exp = sans_fit['experiment_property']
+    with pytest.raises(ValueError):
+        p_exp.x += 1
+        bayes.fit_at_depth(tree, p_exp, name, sans_fit['depth'])
+
+
 if __name__ == '__main__':
     pytest.main()

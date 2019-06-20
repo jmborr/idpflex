@@ -29,6 +29,8 @@ class TestPropertyDict(object):
         assert [k for k in propdict.keys()] == [k for k in props.keys()]
         assert [v for v in propdict.values()] == [v for v in props.values()]
         assert [i for i in propdict.items()] == [i for i in props.items()]
+        propdict2 = propdict.subset(names=list(props.keys())[0])
+        assert len(propdict2) == 1
 
     def test_feature_vector_domain_weights(self):
         props = {'profile': ps.ProfileProperty(name='profile',

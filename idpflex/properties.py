@@ -18,7 +18,8 @@ from idpflex import utils as iutl
 
 
 class PropertyDict(object):
-    r"""
+    r"""A container of properties.
+
     A container of properties mimicking some of the behavior of
     a standard python dictionary, plus methods
     representing features of the properties when taken as a group.
@@ -184,8 +185,9 @@ class PropertyDict(object):
 
         Parameters
         ----------
-        names: list
-            List of property names
+        names: list or str
+            List of property names. If single string treat as if a list of
+            one item.
 
         Returns
         -------
@@ -193,6 +195,8 @@ class PropertyDict(object):
         """
         if names is None:
             return self
+        if isinstance(names, str):
+            return PropertyDict([self[names]])
         return PropertyDict([self[name] for name in names])
 
 
