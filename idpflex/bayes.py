@@ -46,32 +46,6 @@ class TabulatedFunctionModel(Model):
 
         super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
         self.set_param_hint('amplitude', min=0, value=1)
-        # self.set_param_hint('center', value=0)
-
-    # I would remove since it cannot be applied to composite models.
-    # if the same functionality was desired, place it in the initialization
-    # or in a utility function
-    # def guess(self, y, x=None, **kwargs):
-    #     r"""Estimate fitting parameters from input data.
-
-    #     Parameters
-    #     ----------
-    #     y : :class:`~numpy:numpy.ndarray`
-    #         Values to fit to, e.g., SANS or SAXS intensity values
-    #     x : :class:`~numpy:numpy.ndarray`
-    #         independent variable, e.g., momentum transfer
-
-    #     Returns
-    #     -------
-    #     :class:`~lmfit.parameter.Parameters`
-    #         Parameters with estimated initial values.
-    #     """
-    #     amplitude = 1.0
-    #     center = 0.0
-    #     if x is not None:
-    #         center = x[index_of(y, max(y))]  # assumed peak within domain x
-    #         amplitude = max(y)
-    #     return self.make_params(amplitude=amplitude, center=center)
 
 
 class MultiPropertyModel(Model):

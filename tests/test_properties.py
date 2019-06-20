@@ -318,22 +318,14 @@ class TestProfileProperty(object):
         x2 = x1 + abs(np.random.rand(10))
         y1 = x1**2
         y2 = scipy.interpolate.interp1d(x1, y1, fill_value='extrapolate')(x2)
+        e = scipy.interpolate.interp1d(x1, .1*y1, fill_value='extrapolate')(x2)
         prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
                                   errors=0.1*y1)
         assert_array_equal(y2, prop.interpolator(x2))
         prop.interpolate(x2)
         assert_array_equal(y2, prop.profile)
+        assert_array_equal(e, prop.errors)
         assert_array_equal(x2, prop.qvalues)
-
-    def test_normalization(self):
-        x1 = np.random.rand(10)
-        y1 = x1**2
-        y2 = y1/max(y1)
-        prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
-                                  errors=0.1*y1)
-        assert_array_equal(y2, prop.normalized_profile)
-        prop.normalize()
-        assert_array_equal(y2, prop.profile)
 
 
 class TestSansProperty(object):

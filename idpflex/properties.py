@@ -327,7 +327,7 @@ class ScalarProperty(object):
 
     @property
     def feature_weights(self):
-        """Return the 1 as the weight of the property components."""
+        """Return 1 as the weight of the property components."""
         return np.array([1])
 
     def histogram(self, bins=10, errors=False, **kwargs):
@@ -1225,10 +1225,6 @@ class ProfileProperty(object):
         self.errors = errors
         self.node = None
 
-    def __len__(self):
-        r"""Return the number of points in the profile."""
-        return len(self.profile)
-
     @property
     def feature_vector(self):
         r"""
@@ -1265,22 +1261,6 @@ class ProfileProperty(object):
         ws = self.profile / self.errors
         ws[~np.isfinite(ws)] = self.profile[~np.isfinite(ws)]
         return ws / np.linalg.norm(ws)
-
-    @property
-    def normalized_profile(self):
-        r"""
-        Rescaled profile to have values between 0 and 1.
-
-        Returns
-        -------
-        numpy.ndarray
-        """
-        return self.profile/max(self.profile)
-
-    def normalize(self):
-        """Replace profile with normalized values."""
-        self.profile = self.normalized_profile
-        return self
 
     @property
     def interpolator(self):
