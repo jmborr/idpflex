@@ -66,6 +66,8 @@ def test_fit_to_depth_multi(sans_fit):
     exp_pd = properties.PropertyDict([exp])
     mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
     fits = bayes.fit_multiproperty_models(mods, exp_pd)
+    # Since only one probability assert that it does not vary
+    assert fits[0].params['p_0'].vary is False
     chi2 = np.array([fit.chisqr for fit in fits])
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 

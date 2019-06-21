@@ -51,6 +51,11 @@ class TabulatedFunctionModel(Model):
 class MultiPropertyModel(Model):
     r"""A fit model that uses potentially multiple PropertyDicts.
 
+    The created model has a probability parameter for each
+    property group passed into the initialization. It has a
+    constant for each profile property in the groups. It has
+    a scale parameter for each property in the groups.
+
     Parameters
     ----------
     property_groups : list of property groups used to make a model
@@ -97,7 +102,7 @@ class MultiPropertyModel(Model):
         eq = '1-('+'+'.join([f'p_{j}'
                              for j in range(1, len(property_groups))])+')'
         if len(property_groups) == 1:
-            self.params.add('p_0', value=1, min=0, max=1)
+            self.params.add('p_0', value=1, vary=False, min=0, max=1)
         else:
             self.params.add('p_0', value=1, min=0, max=1, expr=eq)
         for prop in property_groups[0].values():
