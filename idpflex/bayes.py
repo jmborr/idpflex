@@ -37,9 +37,9 @@ class TabulatedFunctionModel(Model):
 
         def tabulate(x, amplitude, center):
             if not np.allclose(x, self._xdata):
-                raise ValueError("Attempting to fit with experimental xdata\
-                                   that does not match the xdata of the model.\
-                                   Interpolate before or after.")
+                raise ValueError('Attempting to fit with experimental xdata '
+                                 'that does not match the xdata of the model. '
+                                 'Interpolate before or after.')
             return amplitude * self._ydata
         #     return amplitude * self._interpolator(x - center)
         # def tabulate(x, amplitude):
@@ -64,14 +64,14 @@ class MultiPropertyModel(Model):
 
     def __init__(self, property_groups, **kwargs):
         if len({len(pg) for pg in property_groups}) > 1:
-            raise ValueError("Property groups must be same length")
+            raise ValueError("Property groups must be same length.")
 
         def func(x, **params):
             if not all([np.allclose(x, p.feature_domain)
                         for p in property_groups]):
-                raise ValueError("Attempting to fit with experimental xdata\
-                                   that does not match the xdata of the model.\
-                                   Interpolate before or after.")
+                raise ValueError('Attempting to fit with experimental xdata '
+                                 'that does not match the xdata of the model. '
+                                 'Interpolate before or after.')
             names = [p.name for p in property_groups[0].values()]
             ps = [params[f'p_{i}'] for i in range(len(property_groups))]
             ms = [params[f'scale_{name}'] for name in names]
