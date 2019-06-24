@@ -322,10 +322,20 @@ class TestProfileProperty(object):
         prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
                                   errors=0.1*y1)
         assert_array_equal(y2, prop.interpolator(x2))
-        prop.interpolate(x2)
-        assert_array_equal(y2, prop.profile)
-        assert_array_equal(e, prop.errors)
-        assert_array_equal(x2, prop.qvalues)
+        new_prop = prop.interpolate(x2, inplace=True)
+        assert_array_equal(y2, new_prop.profile)
+        assert_array_equal(e, new_prop.errors)
+        assert_array_equal(x2, new_prop.qvalues)
+        assert new_prop is prop
+        sans_prop = ps.SansProperty(name='sans_foo', qvalues=x1, profile=y1,
+                                    errors=0.1*y1, node='SomeNode')
+        new_sans_prop = sans_prop.interpolate(x2, inplace=False)
+        assert isinstance(new_sans_prop, ps.SansProperty)
+        assert sans_prop is not new_sans_prop
+        assert new_sans_prop.node == 'SomeNode'
+        assert_array_equal(y2, new_sans_prop.profile)
+        assert_array_equal(e, new_sans_prop.errors)
+        assert_array_equal(x2, new_sans_prop.qvalues)
 
 
 class TestSansProperty(object):

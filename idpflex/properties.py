@@ -41,7 +41,7 @@ class PropertyDict(object):
 
         Returns
         -------
-        iter(dict_keys of `_properties`)
+        list of keys of `_properties`
         """
         return iter(self._properties.keys())
 
@@ -180,8 +180,8 @@ class PropertyDict(object):
         r"""
         Property dict for the specified sequence of names.
 
-        The subset is a dict of the properties with the same order as names.
-        If names is None, return self.
+        The subset is a PropertyDict of the properties with the same order as
+        names. If names is None, return self.
 
         Parameters
         ----------
@@ -1214,16 +1214,19 @@ class ProfileProperty(object):
         Intensity values
     errors : :class:`~numpy:numpy.ndarray`
         Errors in the intensity values
+    node : :class:`~idpflex.cnextend.ClusterNodeX`
+        Node to which this property belongs
     """
 
     default_name = 'profile'
 
-    def __init__(self, name=None, qvalues=None, profile=None, errors=None):
+    def __init__(self, name=None, qvalues=None, profile=None, errors=None,
+                 node=None):
         self.name = name
         self.qvalues = qvalues
         self.profile = profile
         self.errors = errors
-        self.node = None
+        self.node = node
 
     @property
     def feature_vector(self):
@@ -1277,7 +1280,7 @@ class ProfileProperty(object):
     @property
     def error_interpolator(self):
         r"""
-        Return an interpolator from the profile data.
+        Return an interpolator from the error data.
 
         Returns
         -------
@@ -1286,12 +1289,18 @@ class ProfileProperty(object):
         return scipy.interpolate.interp1d(self.qvalues, self.errors,
                                           fill_value='extrapolate')
 
-    def interpolate(self, qvalues):
+    def interpolate(self, qvalues, inplace=False):
         r"""Replace data with interpolated values at the specified qvalues."""
-        self.profile = self.interpolator(qvalues)
-        self.errors = self.error_interpolator(qvalues)
-        self.qvalues = qvalues.copy()
-        return self
+        if inplace:
+            self.profile = self.interpolator(qvalues)
+            self.errors = self.error_interpolator(qvalues)
+            self.qvalues = qvalues.copy()
+            return self
+        # New instance of a property potentially using the subclass' init
+        return self.__class__(profile=self.interpolator(qvalues),
+                              errors=self.error_interpolator(qvalues),
+                              qvalues=qvalues.copy(), name=self.name,
+                              node=self.node)
 
 
 class SansLoaderMixin(object):
@@ -1584,8 +1593,7 @@ class SaxsLoaderMixin(object):
 
 
 class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
-    r"""Implementation of a node property for SAXS data
-    """
+    r"""Implementation of a node property for SAXS data."""
 
     default_name = 'saxs'
 
@@ -1597,8 +1605,9 @@ class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
 
 def propagator_weighted_sum(values, tree,
                             weights=lambda left_node, right_node: (1.0, 1.0)):
-    r"""Calculate the property of a node as the sum of its two siblings'
-    property values. Propagation applies only to non-leaf nodes.
+    r"""Calculate the property of a node as the sum of its two siblings' property values.
+
+    Propagation applies only to non-leaf nodes.
 
     Parameters
     ----------
@@ -1610,7 +1619,7 @@ def propagator_weighted_sum(values, tree,
         Callable of two arguments (left-node and right-node) returning
         a tuple of left and right weights. Default callable returns (1.0, 1.0)
         always.
-    """
+    """  # noqa: E501
     # Insert a property for each leaf
     if len(values) != tree.nleafs:
         msg = "len(values)={} but there are {} leafs".format(len(values),
@@ -1637,7 +1646,7 @@ def propagator_weighted_sum(values, tree,
 
 
 def weights_by_size(left_node, right_node):
-    r"""Calculate the relative size of two nodes
+    r"""Calculate the relative size of two nodes.
 
     Parameters
     ----------
