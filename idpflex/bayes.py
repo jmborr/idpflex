@@ -1,6 +1,5 @@
 # from qef.models import TabulatedFunctionModel
 from lmfit.models import (Model, ConstantModel)
-from lmfit import Parameter
 from scipy.interpolate import interp1d
 import numpy as np
 from idpflex.properties import ScalarProperty
@@ -88,20 +87,20 @@ class MultiPropertyModel(Model):
             return mod
 
         super(MultiPropertyModel, self).__init__(func, **kwargs)
-        self.params = self.make_params()
         for i in range(1, len(property_groups)):
-            self.params.add(f'p_{i}', vary=True, min=0, max=1,
-                            value=1.0/len(property_groups))
+            self.set_param_hint(f'p_{i}', vary=True, min=0, max=1,
+                                value=1.0/len(property_groups))
         eq = '1-('+'+'.join([f'p_{j}'
                              for j in range(1, len(property_groups))])+')'
         if len(property_groups) == 1:
-            self.params.add('p_0', value=1, vary=False, min=0, max=1)
+            self.set_param_hint('p_0', value=1, vary=False, min=0, max=1)
         else:
-            self.params.add('p_0', value=1, min=0, max=1, expr=eq)
+            self.set_param_hint('p_0', value=1, min=0, max=1, expr=eq)
         for prop in property_groups[0].values():
-            self.params[f'scale_{prop.name}'] = Parameter(value=1)
+            self.set_param_hint(f'scale_{prop.name}', value=1)
             if not isinstance(prop, ScalarProperty):
-                self.params[f'const_{prop.name}'] = Parameter(value=0)
+                self.set_param_hint(f'const_{prop.name}', value=0)
+        self.params = self.make_params()
 
 
 def model_at_node(node, property_name):
@@ -258,7 +257,7 @@ def create_to_depth_multiproperty(tree, max_depth, experiment=None):
             for i in range(max_depth + 1)]
 
 
-def fit_multiproperty_model(model, experiment, weights=None):
+def fit_multiproperty_model(model, experiment, weights=None, method='leastsq'):
     """Apply a fit to a particular model.
 
     Parameters
@@ -267,6 +266,12 @@ def fit_multiproperty_model(model, experiment, weights=None):
         Model to be fit
     experiment: :class:`~idpflex.properties.PropertyDict`
         Set of experimental properties to be fit.
+    weights: numpy.ndarray, optional
+        Array of weights to be used for fitting
+    method: str, optional
+        Choice of which fitting method to use with lmfit. Defaults to 'leastsq'
+        but can choose methods such as 'differential_evolution' to find global
+        minimizations for the parameters.
 
     Returns
     -------
@@ -274,10 +279,13 @@ def fit_multiproperty_model(model, experiment, weights=None):
         The fit of the model
     """
     return model.fit(experiment.feature_vector, weights=weights,
-                     x=experiment.feature_domain, params=model.params)
+                     x=experiment.feature_domain, params=model.params,
+                     method=method)
 
 
-def fit_multiproperty_models(models, experiment, weights=None):
+def fit_multiproperty_models(models, experiment, weights=None,
+                             method='leastsq'):
     """Apply fitting to a list of models."""
-    return [fit_multiproperty_model(model, experiment, weights=weights)
+    return [fit_multiproperty_model(model, experiment, weights=weights,
+                                    method=method)
             for model in models]
