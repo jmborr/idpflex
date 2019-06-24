@@ -16,6 +16,22 @@ def test_model_at_node(sans_fit):
                               prop.y, decimal=1)
 
 
+def test_TabulatedModel_interpolation(sans_fit):
+    tree = sans_fit['tree']
+    mod = bayes.model_at_node(tree.root, sans_fit['property_name'])
+    prop = tree.root[sans_fit['property_name']]
+    params = mod.make_params()
+    # test interpolation
+    qvals = prop.qvalues[:-1] + np.diff(prop.qvalues)/2
+    assert_array_almost_equal(mod.eval(params, x=qvals),
+                              prop.interpolator(qvals), decimal=1)
+    # test centering
+    params['center'].set(vary=True, value=2)
+    fit = mod.fit(prop.y, x=(prop.qvalues+2), params=params)
+    assert_array_almost_equal(fit.best_fit, prop.y, decimal=1)
+    assert_array_almost_equal(fit.params['center'], 2, decimal=3)
+
+
 def test_model_at_depth(sans_fit):
     tree = sans_fit['tree']
     name = sans_fit['property_name']
