@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import pytest
+import warnings
 
 from idpflex import bayes
 from idpflex import properties
@@ -58,6 +59,34 @@ def test_fit_at_depth_multi(sans_fit):
     fit2 = bayes.fit_multiproperty_model(mod, exp_pd,
                                          weights=exp_pd.feature_weights)
     assert_array_equal(fit2.weights, exp_pd.feature_weights)
+
+
+def test_global_minimization(sans_fit):
+    tree = sans_fit['tree']
+    exp = sans_fit['experiment_property']
+    exp_pd = properties.PropertyDict([exp])
+    mod = bayes.create_at_depth_multiproperty(tree, sans_fit['depth'])
+    for param in mod.params.values():
+        param.set(min=0, max=10)
+    fit = bayes.fit_multiproperty_model(mod, exp_pd,
+                                        weights=exp_pd.feature_weights)
+    fit2 = bayes.fit_multiproperty_model(mod, exp_pd,
+                                         weights=exp_pd.feature_weights,
+                                         method='differential_evolution')
+    try:
+        # Expect less than 20% difference between these
+        diff = abs(1 - fit.redchi/fit2.redchi)
+        assert diff <= 0.20
+    except AssertionError:
+        warnings.warn('Global minimization did not get within 20% of reference'
+                      f' fit. Relative difference {diff:.3}.',
+                      RuntimeWarning)
+        # Try refitting and looser tolerance
+        fit3 = bayes.fit_multiproperty_model(mod, exp_pd,
+                                             weights=exp_pd.feature_weights,
+                                             method='differential_evolution')
+        assert abs(1 - fit.redchi/fit2.redchi) <= 0.50\
+            or abs(1 - fit3.redchi/fit2.redchi) <= 0.50
 
 
 def test_fit_to_depth_multi(sans_fit):
