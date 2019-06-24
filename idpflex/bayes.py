@@ -19,33 +19,26 @@ class TabulatedFunctionModel(Model):
 
     Parameters
     ----------
-    xdata : :class:`~numpy:numpy.ndarray`
-        X-values to construct the interpolator
-    ydata : :class:`~numpy:numpy.ndarray`
-        Y-values to construct the interpolator
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
     interpolator_kind : str
         Interpolator that :class:`~scipy.interpolate.interp1d` should use
-    """
+    """  # noqa: E501
 
-    def __init__(self, xdata, ydata, interpolator_kind='linear',
-                 prefix='', missing=None, name=None,
+    def __init__(self, prop, interpolator_kind='linear',
+                 prefix='', missing=None, name=None, fill_value='extrapolate',
                  **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing})
-        self._interpolator = interp1d(xdata, ydata, kind=interpolator_kind)
-        self._ydata = ydata
-        self._xdata = xdata
+        self._interpolator = interp1d(prop.x, prop.y, kind=interpolator_kind,
+                                      fill_value=fill_value)
+        self.prop = prop
 
         def tabulate(x, amplitude, center):
-            if not np.allclose(x, self._xdata):
-                raise ValueError('Attempting to fit with experimental xdata '
-                                 'that does not match the xdata of the model. '
-                                 'Interpolate before or after.')
-            return amplitude * self._ydata
-        #     return amplitude * self._interpolator(x - center)
-        # def tabulate(x, amplitude):
+            return amplitude * self._interpolator(x - center)
 
         super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
         self.set_param_hint('amplitude', min=0, value=1)
+        self.set_param_hint('center', value=0)
 
 
 class MultiPropertyModel(Model):
@@ -128,7 +121,7 @@ def model_at_node(node, property_name):
         and a :class:`~lmfit.models.ConstantModel`
     """  # noqa: E501
     p = node[property_name]
-    mod = TabulatedFunctionModel(p.x, p.y) + ConstantModel()
+    mod = TabulatedFunctionModel(p) + ConstantModel()
     mod.set_param_hint('center', vary=False)
     return mod
 
@@ -155,7 +148,7 @@ def model_at_depth(tree, depth, property_name):
     mod = ConstantModel()
     for node in tree.nodes_at_depth(depth):
         p = node[property_name]
-        m = TabulatedFunctionModel(p.x, p.y, prefix='n{}_'.format(node.id))
+        m = TabulatedFunctionModel(p, prefix='n{}_'.format(node.id))
         m.set_param_hint('center', vary=False)
         m.set_param_hint('amplitude', value=1.0 / (1 + depth))
         mod += m

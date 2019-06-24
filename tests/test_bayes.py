@@ -109,11 +109,6 @@ def test_fit_bad_input(sans_fit):
         mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
         bayes.fit_multiproperty_models(mods, exp_pd)
 
-    p_exp = sans_fit['experiment_property']
-    with pytest.raises(ValueError):
-        p_exp.x += 1
-        bayes.fit_at_depth(tree, p_exp, name, sans_fit['depth'])
-
 
 if __name__ == '__main__':
     pytest.main()
