@@ -33,10 +33,11 @@ class TestPropertyDict(object):
         assert len(propdict2) == 1
 
     def test_feature_vector_domain_weights(self):
+        x = np.arange(10)
         props = {'profile': ps.ProfileProperty(name='profile',
-                                               profile=np.arange(10),
-                                               qvalues=np.arange(10)*5,
-                                               errors=np.arange(10)*.01),
+                                               profile=x,
+                                               qvalues=x*5,
+                                               errors=x*.01 + 0.001),
                  'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2)}
         propdict = ps.PropertyDict(properties=props.values())
         assert_array_equal(propdict.feature_vector,
@@ -297,7 +298,7 @@ class TestProfileProperty(object):
     def test_feature_vector_domain_and_weights(self):
         v = np.arange(9)
         profile_prop = ps.ProfileProperty(name='foo', qvalues=v, profile=10*v,
-                                          errors=0.1*v)
+                                          errors=0.1*v + 0.001)
         assert_array_equal(profile_prop.feature_vector, profile_prop.profile)
         assert_array_equal(profile_prop.feature_domain, profile_prop.qvalues)
         ws = profile_prop.profile/profile_prop.errors
@@ -336,6 +337,41 @@ class TestProfileProperty(object):
         assert_array_equal(y2, new_sans_prop.profile)
         assert_array_equal(e, new_sans_prop.errors)
         assert_array_equal(x2, new_sans_prop.qvalues)
+
+    def test_filter(self):
+        x1 = np.random.rand(10)
+        # Gaurantee values outside of the range to test extrapolation
+        x1[3] = np.nan
+        y1 = x1**2
+        e1 = 0.1*y1
+        mask = np.isfinite(x1) & np.isfinite(y1) & np.isfinite(e1) & (e1 != 0)
+        prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
+                                  errors=e1)
+        y2 = y1[mask]
+        x2 = x1[mask]
+        e2 = e1[mask]
+        new_prop = prop.filter(inplace=True)
+        assert_array_equal(y2, new_prop.profile)
+        assert_array_equal(e2, new_prop.errors)
+        assert_array_equal(x2, new_prop.qvalues)
+        assert new_prop is prop
+        sans_prop = ps.SansProperty(name='sans_foo', qvalues=x1, profile=y1,
+                                    errors=e1, node='SomeNode')
+        # inplace is False
+        mask2 = y1 < 0.5
+        y3 = y1[mask2]
+        x3 = x1[mask2]
+        e3 = e1[mask2]
+        new_sans_prop = sans_prop.filter(mask=mask2)
+        assert isinstance(new_sans_prop, ps.SansProperty)
+        assert sans_prop is not new_sans_prop
+        assert new_sans_prop.node == 'SomeNode'
+        assert all(new_sans_prop.profile < .5)
+        assert len(new_sans_prop.profile == new_sans_prop.errors)
+        assert len(new_sans_prop.profile == new_sans_prop.qvalues)
+        assert_array_equal(y3, new_sans_prop.profile)
+        assert_array_equal(e3, new_sans_prop.errors)
+        assert_array_equal(x3, new_sans_prop.qvalues)
 
 
 class TestSansProperty(object):

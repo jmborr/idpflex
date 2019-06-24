@@ -1262,7 +1262,6 @@ class ProfileProperty(object):
         if self.e is None or np.allclose(np.zeros(len(self.y)), self.e):
             return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
         ws = self.profile / self.errors
-        ws[~np.isfinite(ws)] = self.profile[~np.isfinite(ws)]
         return ws / np.linalg.norm(ws)
 
     @property
@@ -1301,6 +1300,36 @@ class ProfileProperty(object):
                               errors=self.error_interpolator(qvalues),
                               qvalues=qvalues.copy(), name=self.name,
                               node=self.node)
+
+    def filter(self, mask=None, inplace=False):
+        """Filter data with the provided mask, otherwise filter 'bad' data.
+
+        Will keep the portion of the profile, qvalues, and errors that align
+        with true values in the mask. By default, the mask is true when all of
+        profile, qvalues, and errors are noninfinite and the errors is nonzero.
+
+        Parameters
+        ----------
+        mask: numpy.ndarray of type bool
+            The mask to apply to the components of the profile.
+        inplace: bool
+            If inplace, modify profile data instead of creating new object.
+
+        Returns
+        -------
+        A new property with the chosen subset of data.
+        """
+        if mask is None:
+            mask = np.isfinite(self.profile) & np.isfinite(self.qvalues)\
+                & np.isfinite(self.errors) & (self.errors != 0)
+        if inplace:
+            self.profile = self.profile[mask]
+            self.errors = self.errors[mask]
+            self.qvalues = self.qvalues[mask]
+            return self
+        return self.__class__(name=self.name, profile=self.profile[mask],
+                              node=self.node, qvalues=self.qvalues[mask],
+                              errors=self.errors[mask])
 
 
 class SansLoaderMixin(object):

@@ -13,8 +13,6 @@ class TabulatedFunctionModel(Model):
     Fitting parameters:
         - integrated intensity ``amplitude`` :math:`A`
         - position of the peak ``center`` :math:`E_0`
-        - nominal relaxation time ``tau`` :math:`\tau`
-        - stretching exponent ``beta`` :math:`\beta`
 
     Parameters
     ----------
@@ -25,9 +23,9 @@ class TabulatedFunctionModel(Model):
     """  # noqa: E501
 
     def __init__(self, prop, interpolator_kind='linear',
-                 prefix='', missing=None, name=None, fill_value='extrapolate',
+                 fill_value='extrapolate', prefix='', missing=None, name=None,
                  **kwargs):
-        kwargs.update({'prefix': prefix, 'missing': missing})
+        kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
         self._interpolator = interp1d(prop.x, prop.y, kind=interpolator_kind,
                                       fill_value=fill_value)
         self.prop = prop
