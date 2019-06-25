@@ -1,5 +1,6 @@
 # from qef.models import TabulatedFunctionModel
 from lmfit.models import (Model, ConstantModel)
+from lmfit import CompositeModel
 from scipy.interpolate import interp1d
 import numpy as np
 from idpflex.properties import ScalarProperty
@@ -30,8 +31,8 @@ class TabulatedFunctionModel(Model):
                                       fill_value=fill_value)
         self.prop = prop
 
-        def tabulate(x, amplitude, center):
-            return amplitude * self._interpolator(x - center)
+        def tabulate(x, amplitude, center, prop=None):
+            return amplitude * prop.interpolator(prop.x - center)
 
         super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
         self.set_param_hint('amplitude', min=0, value=1)
@@ -231,7 +232,8 @@ def create_at_depth_multiproperty(tree, depth, experiment=None):
     property_names = experiment.keys() if experiment is not None else None
     pgs = [node.property_group.subset(property_names)
            for node in tree.nodes_at_depth(depth)]
-    return MultiPropertyModel(pgs, experiment_property_group=experiment)
+    # return MultiPropertyModel(pgs, experiment_property_group=experiment)
+    return create_model_from_property_groups(pgs, TabulatedFunctionModel)
 
 
 def create_to_depth_multiproperty(tree, max_depth, experiment=None):
@@ -255,7 +257,8 @@ def create_to_depth_multiproperty(tree, max_depth, experiment=None):
             for i in range(max_depth + 1)]
 
 
-def fit_multiproperty_model(model, experiment, weights=None, method='leastsq'):
+def fit_multiproperty_model(model, experiment, params=None, weights=None,
+                            method='leastsq'):
     """Apply a fit to a particular model.
 
     Parameters
@@ -264,6 +267,8 @@ def fit_multiproperty_model(model, experiment, weights=None, method='leastsq'):
         Model to be fit
     experiment: :class:`~idpflex.properties.PropertyDict`
         Set of experimental properties to be fit.
+    params: Parameters
+        Parameters of the model to be used. Can default to model.make_params()
     weights: numpy.ndarray, optional
         Array of weights to be used for fitting
     method: str, optional
@@ -276,14 +281,108 @@ def fit_multiproperty_model(model, experiment, weights=None, method='leastsq'):
     :class:`~lmfit.model.ModelResult`
         The fit of the model
     """
+    if params is None:
+        params = model.make_params()
     return model.fit(experiment.feature_vector, weights=weights,
-                     x=experiment.feature_domain, params=model.params,
+                     x=experiment.feature_domain, params=params,
                      method=method)
 
 
-def fit_multiproperty_models(models, experiment, weights=None,
-                             method='leastsq'):
+def fit_multiproperty_models(models, experiment, params_list=None,
+                             weights=None, method='leastsq'):
     """Apply fitting to a list of models."""
-    return [fit_multiproperty_model(model, experiment, weights=weights,
-                                    method=method)
-            for model in models]
+    return [fit_multiproperty_model(model, experiment, params=params,
+                                    weights=weights, method=method)
+            for model, params in zip(models, params_list)]
+
+
+def _create_model_from_property_group(property_group, models):
+    """Create a composite model from a PropertyDict and a set of models.
+
+    Parameters
+    ----------
+    property_group: :class:`~idpflex.properties.PropertyDict`
+        The set of properties used to create a composite model.
+    models: list of lmfit.Model class, list of function, lmfit.Model class, or function
+        The models to apply to each property. If only one model, apply it to
+        all properties. If functions, generate models from them. Must have
+        an independent parameter x and a keyword argument prop=None.
+
+    Returns
+    -------
+    :class:`~lmfit.CompositeModel`
+        The composite model created by applying the model to the corresponging
+        property and concatenating the results.
+    """  # noqa: E501
+    if not isinstance(models, list):
+        models = [models]
+    if isinstance(models[0], type(lambda _: 3)):
+        models = [Model(f) for f in models]
+    if len(models) == 1:
+        models = [models[0](prop=prop) for prop in property_group.values()]
+    elif len(models) != len(property_group):
+        raise ValueError(f'Number of Properties {len(property_group)} '
+                         f'and number of models {len(models)} do not match '
+                         'and more than one model was provided.')
+    # Prefix all models with the associated property name
+    # Set the model's function prop arg to use the property
+    for i, p in enumerate(property_group.values()):
+        models[i].prefix = p.name + '_'
+        models[i].opts['prop'] = p
+    # Reduce models to a single composite model
+    model = models[0]
+    for m in models[1:]:
+        model = CompositeModel(model, m, lambda l, r: np.concatenate([l, r]))
+    return model
+
+
+def create_model_from_property_groups(property_groups, models):
+    """Create a composite model from a list of PropertyDict and a set of models.
+
+    Parameters
+    ----------
+    property_groups: list of :class:`~idpflex.properties.PropertyDict`
+        The set of properties used to create a composite model.
+    models: list of lmfit.Model, list of function, lmfit.Model, or function
+        The models to apply to each property. If only one model, apply it to
+        all properties. If functions, generate models from them. Must have
+        an independent parameter x and a keyword argument prop=None.
+
+    Returns
+    -------
+    :class:`~lmfit.CompositeModel`
+        The composite model created by applying the model to the corresponging
+        property and concatenating the results.
+    """
+    if not isinstance(property_groups, list):
+        property_groups = [property_groups]
+    model = _create_model_from_property_group(property_groups[0], models)
+    if len(property_groups) == 1:
+        return model
+    # Create composite model with probability parameters and long parameters
+    model = ConstantModel(prefix='prob_')*model
+    for component in model.components:
+        component.prefix = 'struct0_' + component.prefix
+    for i, property_group in enumerate(property_groups[1:]):
+        submodel = _create_model_from_property_group(property_group, models)
+        submodel = ConstantModel(prefix='prob_')*submodel
+        for component in submodel.components:
+            component.prefix = f'struct{i+1}_' + component.prefix
+        model = model + submodel
+    # For each property, create single parameter without struct prefix
+    for prop in property_groups[0].values():
+        for param in (p for p in model.param_names if prop.name in p):
+            pbase = param.partition('_')[-1]
+            if 'struct0_' in param:
+                model.set_param_hint(pbase, expr='struct0_'+pbase)
+                continue
+            # make all parameters with struct prefix the same value
+            model.set_param_hint(param, expr='struct0_'+pbase)
+    # For each structure, bound probabilites and sum to 1
+    prob_names = [p for p in model.param_names if 'prob_c' in p]
+    eq = '1-('+'+'.join(prob_names[1:])+')'
+    for p in prob_names:
+        model.set_param_hint(p, min=0, max=1)
+        if 'struct0_' in p:
+            model.set_param_hint(p, min=0, max=1, expr=eq)
+    return model
