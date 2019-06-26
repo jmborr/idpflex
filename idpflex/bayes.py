@@ -53,7 +53,7 @@ class ConstantVectorModel(Model):
 
     def __init__(self, prop, **kwargs):
         def constant_vector(x, scale, prop=None):
-            if not set(x).issuperset(prop.x):
+            if not set(x).issuperset(prop.feature_domain):
                 raise ValueError('The domain of the experiment does not align '
                                  'with the domain of the profile being fitted.'
                                  ' Interpolate before creating the model.')
@@ -78,7 +78,7 @@ class LinearModel(Model):
 
     def __init__(self, prop, **kwargs):
         def line(x, slope, intercept, prop=None):
-            if not set(x) >= set(prop.feature_domain):
+            if not set(x).issuperset(prop.feature_domain):
                 raise ValueError('The domain of the experiment does not align '
                                  'with the domain of the profile being fitted.'
                                  ' Interpolate before creating the model.')
