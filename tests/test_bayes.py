@@ -138,6 +138,34 @@ def test_multiproperty_fit(sans_fit):
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
 
+def test_multiproperty_fit_different_models(sans_fit):
+    tree = sans_fit['tree']
+    exp = sans_fit['experiment_property']
+    scalar = properties.ScalarProperty(name='foo', x=1, y=1, e=1)
+    values = [properties.ScalarProperty(name='foo', x=1, y=i, e=1)
+              for i in range(len(tree.leafs))]
+    properties.propagator_size_weighted_sum(values, tree)
+    exp_pd = properties.PropertyDict([exp, scalar])
+    ctd = bayes.create_to_depth_multiproperty
+    models = ctd(tree, max_depth=7, models=[bayes.LinearModel,
+                                            bayes.ConstantVectorModel])
+    params_list = [m.make_params() for m in models]
+    weights = 1/np.concatenate([exp.e, scalar.feature_weights])
+    fits = bayes.fit_multiproperty_models(models, exp_pd, weights=weights,
+                                          params_list=params_list)
+    chi2 = np.array([fit.chisqr for fit in fits])
+    assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
+    assert all(['struct' not in p for p in fits[0].params])
+    assert 'foo_scale' in fits[-1].params
+    assert 'sans_slope' in fits[-1].params
+    assert 'sans_intercept' in fits[-1].params
+    assert all([f'struct{i}_prob_c' in fits[-1].params for i in range(7)])
+    assert fits[-1].params['sans_slope'].expr == 'struct0_sans_slope'
+    assert fits[-1].params['struct1_sans_slope'].expr == 'struct0_sans_slope'
+    assert 1 - sum([p.value for p in fits[-1].params.values()
+                    if 'prob' in p.name]) < 1e-4
+
+
 def test_fit_bad_input(sans_fit):
     tree = sans_fit['tree']
     exp = sans_fit['experiment_property']

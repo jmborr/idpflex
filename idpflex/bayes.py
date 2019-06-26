@@ -310,19 +310,19 @@ def _create_model_from_property_group(property_group, models):
     """  # noqa: E501
     if not isinstance(models, list):
         models = [models]
-    if isinstance(models[0], type(lambda _: 3)):
-        models = [Model(f) for f in models]
     if len(models) == 1:
         models = [models[0](prop=prop) for prop in property_group.values()]
     elif len(models) != len(property_group):
         raise ValueError(f'Number of Properties {len(property_group)} '
                          f'and number of models {len(models)} do not match '
                          'and more than one model was provided.')
+    models = [m(prop=p) if isinstance(m, type) else m
+              for m, p in zip(models, property_group.values())]
     # Prefix all models with the associated property name
     # Set the model's function prop arg to use the property
     for i, p in enumerate(property_group.values()):
-        models[i].prefix = p.name + '_'
         models[i].opts['prop'] = p
+        models[i].prefix = p.name + '_'
     # Reduce models to a single composite model
     model = models[0]
     for m in models[1:]:
