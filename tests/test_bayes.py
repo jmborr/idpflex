@@ -177,16 +177,20 @@ def test_fit_bad_input(sans_fit):
               for i in range(len(tree.leafs))]
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
+    ctd = bayes.create_to_depth_multiproperty
     with pytest.raises(ValueError):
-        models = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+        models = ctd(tree, max_depth=7, models=bayes.LinearModel)
         bayes.fit_multiproperty_models(models, exp_pd)
     with pytest.raises(ValueError):
-        mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+        models = ctd(tree, max_depth=7, models=[bayes.LinearModel]*3)
+        bayes.fit_multiproperty_models(models, exp_pd)
+    with pytest.raises(ValueError):
+        mods = ctd(tree, max_depth=7, models=bayes.ConstantVectorModel)
         bayes.fit_multiproperty_models(mods, exp_pd.subset([name]))
     with pytest.raises(ValueError):
         left_child = tree.root.get_left()
         left_child.property_group = left_child.property_group.subset([name])
-        mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+        mods = ctd(tree, max_depth=7)
         bayes.fit_multiproperty_models(mods, exp_pd)
 
 
