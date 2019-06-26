@@ -147,8 +147,9 @@ def test_multiproperty_fit_different_models(sans_fit):
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
     ctd = bayes.create_to_depth_multiproperty
+    # test different models where one is a class and one is an instance
     models = ctd(tree, max_depth=7, models=[bayes.LinearModel,
-                                            bayes.ConstantVectorModel])
+                                            bayes.ConstantVectorModel()])
     params_list = [m.make_params() for m in models]
     weights = 1/np.concatenate([exp.e, scalar.feature_weights])
     fits = bayes.fit_multiproperty_models(models, exp_pd, weights=weights,

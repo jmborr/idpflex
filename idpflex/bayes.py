@@ -51,7 +51,7 @@ class ConstantVectorModel(Model):
         Property used to create interpolator and model
     """  # noqa: E501
 
-    def __init__(self, prop, **kwargs):
+    def __init__(self, prop=None, **kwargs):
         def constant_vector(x, scale, prop=None):
             if not set(x).issuperset(prop.feature_domain):
                 raise ValueError('The domain of the experiment does not align '
@@ -76,7 +76,7 @@ class LinearModel(Model):
         Property used to create interpolator and model
     """  # noqa: E501
 
-    def __init__(self, prop, **kwargs):
+    def __init__(self, prop=None, **kwargs):
         def line(x, slope, intercept, prop=None):
             if not set(x).issuperset(prop.feature_domain):
                 raise ValueError('The domain of the experiment does not align '
@@ -208,8 +208,10 @@ def create_at_depth_multiproperty(tree, depth, models=LinearModel,
         Hierarchical tree
     depth : int
         Fit at this depth
-    models : list of Model classes, Model class, list of functions, function
-        Descriptive model(s) for how to fit associated property to experiment
+    models: (list of) class/subclasses/instances of lmfit.Model
+        The models to apply to each property. If only one model, apply it to
+        all properties. The model's function must have an independent
+        parameter x and a keyword argument prop=None.
     experiment : PropertyDict, optional
         A PropertyDict containing the experimental data.
         If provided, will use only the keys in the experiment.
@@ -235,8 +237,10 @@ def create_to_depth_multiproperty(tree, max_depth, models=LinearModel,
         Hierarchical tree
     max_depth : int
         Fit at each depth up to (and including) max_depth
-    models : list of Model classes, Model class, list of functions, function
-        Descriptive model(s) for how to fit associated property to experiment
+    models: (list of) class/subclasses/instances of lmfit.Model
+        The models to apply to each property. If only one model, apply it to
+        all properties. The model's function must have an independent
+        parameter x and a keyword argument prop=None.
     experiment : PropertyDict, optional
         A PropertyDict containing the experimental data.
 
@@ -297,10 +301,11 @@ def _create_model_from_property_group(property_group, models):
     ----------
     property_group: :class:`~idpflex.properties.PropertyDict`
         The set of properties used to create a composite model.
-    models: list of lmfit.Model class, list of function, lmfit.Model class, or function
+    models: (list of) class/subclasses/instances of lmfit.Model
         The models to apply to each property. If only one model, apply it to
-        all properties. If functions, generate models from them. Must have
-        an independent parameter x and a keyword argument prop=None.
+        all properties. The model's function must have an independent
+        parameter x and a keyword argument prop=None.
+
 
     Returns
     -------
@@ -339,10 +344,10 @@ def create_model_from_property_groups(property_groups, models):
     ----------
     property_groups: list of :class:`~idpflex.properties.PropertyDict`
         The set of properties used to create a composite model.
-    models: list of lmfit.Model, list of function, lmfit.Model, or function
+    models: (list of) class/subclasses/instances of lmfit.Model
         The models to apply to each property. If only one model, apply it to
-        all properties. If functions, generate models from them. Must have
-        an independent parameter x and a keyword argument prop=None.
+        all properties. The model's function must have an independent
+        parameter x and a keyword argument prop=None.
 
     Returns
     -------
