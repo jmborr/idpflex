@@ -3,6 +3,8 @@ from lmfit.models import (Model, ConstantModel)
 from lmfit import CompositeModel
 from scipy.interpolate import interp1d
 import numpy as np
+import copy
+from itertools import cycle
 
 
 class TabulatedFunctionModel(Model):
@@ -315,26 +317,25 @@ def _create_model_from_property_group(property_group, models):
     """  # noqa: E501
     if not isinstance(models, list):
         models = [models]
-    if len(models) == 1:
-        models = [models[0](prop=prop) for prop in property_group.values()]
-    elif len(models) != len(property_group):
+    elif len(models) != 1 and len(models) != len(property_group):
         raise ValueError(f'Number of Properties {len(property_group)} '
                          f'and number of models {len(models)} do not match '
                          'and more than one model was provided.')
-    models = [m(prop=p) if isinstance(m, type) else m
-              for m, p in zip(models, property_group.values())]
+    # Create new model instances or copy model instances
+    model_objs = [m(prop=p) if isinstance(m, type) else copy.deepcopy(m)
+                  for m, p in zip(cycle(models), property_group.values())]
     # Prefix all models with the associated property name
     # Set the model's function prop arg to use the property
     for i, p in enumerate(property_group.values()):
-        models[i].opts['prop'] = p
-        models[i].prefix = p.name + '_'
+        model_objs[i].opts['prop'] = p
+        model_objs[i].prefix = p.name + '_'
     # Reduce models to a single composite model
-    model = models[0]
-    for m in models[1:]:
-        model = CompositeModel(model, m, lambda l, r:
-                               np.concatenate([np.atleast_1d(l),
-                                               np.atleast_1d(r)]))
-    return model
+    joined_model = model_objs[0]
+    for m in model_objs[1:]:
+        joined_model = CompositeModel(joined_model, m, lambda l, r:
+                                      np.concatenate([np.atleast_1d(l),
+                                                      np.atleast_1d(r)]))
+    return joined_model
 
 
 def create_model_from_property_groups(property_groups, models):

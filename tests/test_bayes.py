@@ -135,7 +135,7 @@ def test_multiproperty_fit(sans_fit):
     fits = bayes.fit_multiproperty_models(models, exp_pd, weights=weights,
                                           params_list=params_list)
     chi2 = np.array([fit.chisqr for fit in fits])
-    assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
+    assert chi2[sans_fit['depth']] <= 1e-10
 
 
 def test_multiproperty_fit_different_models(sans_fit):
