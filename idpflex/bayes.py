@@ -3,7 +3,6 @@ from lmfit.models import (Model, ConstantModel)
 from lmfit import CompositeModel
 from scipy.interpolate import interp1d
 import numpy as np
-from idpflex.properties import ScalarProperty
 
 
 class TabulatedFunctionModel(Model):
@@ -32,74 +31,62 @@ class TabulatedFunctionModel(Model):
         self.prop = prop
 
         def tabulate(x, amplitude, center, prop=None):
-            return amplitude * prop.interpolator(prop.x - center)
+            return amplitude * prop.interpolator(x - center)
 
-        super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
+        super(TabulatedFunctionModel, self).__init__(tabulate, prop=prop,
+                                                     **kwargs)
         self.set_param_hint('amplitude', min=0, value=1)
         self.set_param_hint('center', value=0)
 
 
-class MultiPropertyModel(Model):
-    r"""A fit model that uses potentially multiple PropertyDicts.
+class ConstantVectorModel(Model):
+    r"""A fit model that fits :math:`scale*prop.y = exp`.
 
-    The created model has a probability parameter for each
-    property group passed into the initialization. It has a
-    constant for each profile property in the groups. It has
-    a scale parameter for each property in the groups.
+    Fitting parameters:
+        - scaling factor ``scale``
 
     Parameters
     ----------
-    property_groups : list of property groups used to make a model
-        Properties used to create a feature vector and a model.
-    """
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
+    """  # noqa: E501
 
-    def __init__(self, property_groups, **kwargs):
-        if len({len(pg) for pg in property_groups}) > 1:
-            raise ValueError("Property groups must be same length.")
+    def __init__(self, prop, **kwargs):
+        def constant_vector(x, scale, prop=None):
+            if not set(x).issuperset(prop.x):
+                raise ValueError('The domain of the experiment does not align '
+                                 'with the domain of the profile being fitted.'
+                                 ' Interpolate before creating the model.')
+            return scale*prop.y
+        super(ConstantVectorModel, self).__init__(constant_vector, prop=prop,
+                                                  **kwargs)
+        self.set_param_hint('scale', value=1, min=0)
 
-        def func(x, **params):
-            if not all([np.allclose(x, p.feature_domain)
-                        for p in property_groups]):
-                raise ValueError('Attempting to fit with experimental xdata '
-                                 'that does not match the xdata of the model. '
-                                 'Interpolate before or after.')
-            names = [p.name for p in property_groups[0].values()]
-            ps = [params[f'p_{i}'] for i in range(len(property_groups))]
-            ms = [params[f'scale_{name}'] for name in names]
-            cs = [params[f'const_{name}'] for name in names
-                  if not isinstance(property_groups[0][name], ScalarProperty)]
-            # start with the right proportion of each structure
-            mod = sum([ps[i] * pg.feature_vector
-                       for i, pg in enumerate(property_groups)])
-            # scale each property of the model by the appropriate factor
-            scaling = np.concatenate([ms[i]*np.ones(len(p.feature_vector))
-                                      for i, p in
-                                      enumerate(property_groups[0].values())])
-            mod *= scaling
-            # finally, add a constant for each property of the model
-            mod += np.concatenate([cs[i]*np.ones(len(p.feature_vector))
-                                   if not isinstance(p, ScalarProperty)
-                                   else np.ones(len(p.feature_vector))
-                                   for i, p in
-                                   enumerate(property_groups[0].values())
-                                   ])
-            return mod
 
-        super(MultiPropertyModel, self).__init__(func, **kwargs)
-        for i in range(1, len(property_groups)):
-            self.set_param_hint(f'p_{i}', vary=True, min=0, max=1,
-                                value=1.0/len(property_groups))
-        eq = '1-('+'+'.join([f'p_{j}'
-                             for j in range(1, len(property_groups))])+')'
-        if len(property_groups) == 1:
-            self.set_param_hint('p_0', value=1, vary=False, min=0, max=1)
-        else:
-            self.set_param_hint('p_0', value=1, min=0, max=1, expr=eq)
-        for prop in property_groups[0].values():
-            self.set_param_hint(f'scale_{prop.name}', value=1)
-            if not isinstance(prop, ScalarProperty):
-                self.set_param_hint(f'const_{prop.name}', value=0)
-        self.params = self.make_params()
+class LinearModel(Model):
+    r"""A fit model that fits :math:`m*prop.y + b = exp`.
+
+    Fitting parameters:
+        - slope ``slope``
+        - intercept ``intercept``
+
+    Parameters
+    ----------
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
+    """  # noqa: E501
+
+    def __init__(self, prop, **kwargs):
+        def line(x, slope, intercept, prop=None):
+            if not set(x) >= set(prop.feature_domain):
+                raise ValueError('The domain of the experiment does not align '
+                                 'with the domain of the profile being fitted.'
+                                 ' Interpolate before creating the model.')
+            return slope*prop.y + intercept
+        super(LinearModel, self).__init__(line, prop=prop,
+                                          **kwargs)
+        self.set_param_hint('slope', value=1, min=0)
+        self.set_param_hint('intercept', value=0, min=0)
 
 
 def model_at_node(node, property_name):
@@ -119,7 +106,7 @@ def model_at_node(node, property_name):
         and a :class:`~lmfit.models.ConstantModel`
     """  # noqa: E501
     p = node[property_name]
-    mod = TabulatedFunctionModel(p) + ConstantModel()
+    mod = TabulatedFunctionModel(prop=p) + ConstantModel()
     mod.set_param_hint('center', vary=False)
     return mod
 
@@ -211,7 +198,8 @@ def fit_to_depth(tree, experiment, property_name, max_depth=5):
             depth in range(max_depth + 1)]
 
 
-def create_at_depth_multiproperty(tree, depth, experiment=None):
+def create_at_depth_multiproperty(tree, depth, models=LinearModel,
+                                  experiment=None):
     r"""Create a model at a particular tree depth from the root node.
 
     Parameters
@@ -220,6 +208,8 @@ def create_at_depth_multiproperty(tree, depth, experiment=None):
         Hierarchical tree
     depth : int
         Fit at this depth
+    models : list of Model classes, Model class, list of functions, function
+        Descriptive model(s) for how to fit associated property to experiment
     experiment : PropertyDict, optional
         A PropertyDict containing the experimental data.
         If provided, will use only the keys in the experiment.
@@ -232,11 +222,11 @@ def create_at_depth_multiproperty(tree, depth, experiment=None):
     property_names = experiment.keys() if experiment is not None else None
     pgs = [node.property_group.subset(property_names)
            for node in tree.nodes_at_depth(depth)]
-    # return MultiPropertyModel(pgs, experiment_property_group=experiment)
-    return create_model_from_property_groups(pgs, TabulatedFunctionModel)
+    return create_model_from_property_groups(pgs, models)
 
 
-def create_to_depth_multiproperty(tree, max_depth, experiment=None):
+def create_to_depth_multiproperty(tree, max_depth, models=LinearModel,
+                                  experiment=None):
     r"""Create models to a particular tree depth from the root node.
 
     Parameters
@@ -245,6 +235,8 @@ def create_to_depth_multiproperty(tree, max_depth, experiment=None):
         Hierarchical tree
     max_depth : int
         Fit at each depth up to (and including) max_depth
+    models : list of Model classes, Model class, list of functions, function
+        Descriptive model(s) for how to fit associated property to experiment
     experiment : PropertyDict, optional
         A PropertyDict containing the experimental data.
 
@@ -253,7 +245,7 @@ def create_to_depth_multiproperty(tree, max_depth, experiment=None):
     list of :class:`~lmfit.model.ModelResult`
         Models for each depth
     """
-    return [create_at_depth_multiproperty(tree, i, experiment)
+    return [create_at_depth_multiproperty(tree, i, models, experiment)
             for i in range(max_depth + 1)]
 
 
@@ -291,6 +283,8 @@ def fit_multiproperty_model(model, experiment, params=None, weights=None,
 def fit_multiproperty_models(models, experiment, params_list=None,
                              weights=None, method='leastsq'):
     """Apply fitting to a list of models."""
+    if params_list is None:
+        params_list = [m.make_params() for m in models]
     return [fit_multiproperty_model(model, experiment, params=params,
                                     weights=weights, method=method)
             for model, params in zip(models, params_list)]
@@ -332,7 +326,9 @@ def _create_model_from_property_group(property_group, models):
     # Reduce models to a single composite model
     model = models[0]
     for m in models[1:]:
-        model = CompositeModel(model, m, lambda l, r: np.concatenate([l, r]))
+        model = CompositeModel(model, m, lambda l, r:
+                               np.concatenate([np.atleast_1d(l),
+                                               np.atleast_1d(r)]))
     return model
 
 
@@ -378,7 +374,7 @@ def create_model_from_property_groups(property_groups, models):
                 continue
             # make all parameters with struct prefix the same value
             model.set_param_hint(param, expr='struct0_'+pbase)
-    # For each structure, bound probabilites and sum to 1
+    # For each structure, bound probabilites and force sum to 1
     prob_names = [p for p in model.param_names if 'prob_c' in p]
     eq = '1-('+'+'.join(prob_names[1:])+')'
     for p in prob_names:

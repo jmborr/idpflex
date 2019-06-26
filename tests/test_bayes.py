@@ -69,12 +69,13 @@ def test_fit_at_depth_multi(sans_fit):
     exp = sans_fit['experiment_property']
     exp_pd = properties.PropertyDict([exp])
     mod = bayes.create_at_depth_multiproperty(tree, sans_fit['depth'])
-    fit = bayes.fit_multiproperty_model(mod, exp_pd)
+    params = mod.make_params()
+    fit = bayes.fit_multiproperty_model(mod, exp_pd, params=params)
     assert fit.weights is None
-    assert fit.chisqr < 1e-10
     fit2 = bayes.fit_multiproperty_model(mod, exp_pd,
-                                         weights=exp_pd.feature_weights)
-    assert_array_equal(fit2.weights, exp_pd.feature_weights)
+                                         weights=1/exp.e)
+    assert fit2.chisqr < 1e-10
+    assert_array_equal(fit2.weights, 1/exp.e)
 
 
 def test_global_minimization(sans_fit):
@@ -82,11 +83,12 @@ def test_global_minimization(sans_fit):
     exp = sans_fit['experiment_property']
     exp_pd = properties.PropertyDict([exp])
     mod = bayes.create_at_depth_multiproperty(tree, sans_fit['depth'])
-    for param in mod.params.values():
+    params = mod.make_params()
+    for param in params.values():
         param.set(min=0, max=10)
-    fit = bayes.fit_multiproperty_model(mod, exp_pd,
+    fit = bayes.fit_multiproperty_model(mod, exp_pd, params=params,
                                         weights=exp_pd.feature_weights)
-    fit2 = bayes.fit_multiproperty_model(mod, exp_pd,
+    fit2 = bayes.fit_multiproperty_model(mod, exp_pd, params=params,
                                          weights=exp_pd.feature_weights,
                                          method='differential_evolution')
     try:
@@ -98,7 +100,7 @@ def test_global_minimization(sans_fit):
                       f' fit. Relative difference {diff:.3}.',
                       RuntimeWarning)
         # Try refitting and looser tolerance
-        fit3 = bayes.fit_multiproperty_model(mod, exp_pd,
+        fit3 = bayes.fit_multiproperty_model(mod, exp_pd, params=params,
                                              weights=exp_pd.feature_weights,
                                              method='differential_evolution')
         assert abs(1 - fit.redchi/fit2.redchi) <= 0.50\
@@ -110,9 +112,11 @@ def test_fit_to_depth_multi(sans_fit):
     exp = sans_fit['experiment_property']
     exp_pd = properties.PropertyDict([exp])
     mods = bayes.create_to_depth_multiproperty(tree, max_depth=7)
-    fits = bayes.fit_multiproperty_models(mods, exp_pd)
-    # Since only one probability assert that it does not vary
-    assert fits[0].params['p_0'].vary is False
+    params_list = [m.make_params() for m in mods]
+    fits = bayes.fit_multiproperty_models(mods, exp_pd, weights=1/exp.e,
+                                          params_list=params_list)
+    # Since only one probability assert that there is no probability
+    assert all(['prob' not in p for p in fits[0].params])
     chi2 = np.array([fit.chisqr for fit in fits])
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
@@ -126,9 +130,11 @@ def test_multiproperty_fit(sans_fit):
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
     models = bayes.create_to_depth_multiproperty(tree, max_depth=7)
-    fits = bayes.fit_multiproperty_models(models, exp_pd)
+    params_list = [m.make_params() for m in models]
+    weights = 1/np.concatenate([exp.e, scalar.feature_weights])
+    fits = bayes.fit_multiproperty_models(models, exp_pd, weights=weights,
+                                          params_list=params_list)
     chi2 = np.array([fit.chisqr for fit in fits])
-    assert 'const_foo' not in fits[0].best_values.keys()
     assert np.argmax(chi2 < 1e-10) == sans_fit['depth']
 
 

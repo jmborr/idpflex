@@ -302,7 +302,6 @@ class TestProfileProperty(object):
         assert_array_equal(profile_prop.feature_vector, profile_prop.profile)
         assert_array_equal(profile_prop.feature_domain, profile_prop.qvalues)
         ws = profile_prop.profile/profile_prop.errors
-        ws[~np.isfinite(ws)] = profile_prop.profile[~np.isfinite(ws)]
         ws = ws/np.linalg.norm(ws)
         assert_array_equal(profile_prop.feature_weights, ws)
         assert_almost_equal(np.linalg.norm(profile_prop.feature_weights), 1)
