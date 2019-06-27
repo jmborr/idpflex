@@ -5,6 +5,8 @@ from scipy.interpolate import interp1d
 import numpy as np
 import copy
 from itertools import cycle
+from functools import reduce
+import operator
 
 
 class TabulatedFunctionModel(Model):
@@ -330,12 +332,11 @@ def _create_model_from_property_group(property_group, models):
         model_objs[i].opts['prop'] = p
         model_objs[i].prefix = p.name + '_'
     # Reduce models to a single composite model
-    joined_model = model_objs[0]
-    for m in model_objs[1:]:
-        joined_model = CompositeModel(joined_model, m, lambda l, r:
-                                      np.concatenate([np.atleast_1d(l),
-                                                      np.atleast_1d(r)]))
-    return joined_model
+    return reduce(lambda joined_model, m:
+                  CompositeModel(joined_model, m, lambda l, r:
+                                 np.concatenate([np.atleast_1d(l),
+                                                 np.atleast_1d(r)])),
+                  model_objs)
 
 
 def create_model_from_property_groups(property_groups, models):
@@ -358,33 +359,30 @@ def create_model_from_property_groups(property_groups, models):
     """
     if not isinstance(property_groups, list):
         property_groups = [property_groups]
-    model = _create_model_from_property_group(property_groups[0], models)
+
     if len(property_groups) == 1:
-        return model
-    # Create composite model with probability parameters and long parameters
-    model = ConstantModel(prefix='prob_')*model
-    for component in model.components:
-        component.prefix = 'struct0_' + component.prefix
-    for i, property_group in enumerate(property_groups[1:]):
+        return _create_model_from_property_group(property_groups[0], models)
+
+    def create_submodel(i, property_group):
         submodel = _create_model_from_property_group(property_group, models)
         submodel = ConstantModel(prefix='prob_')*submodel
         for component in submodel.components:
-            component.prefix = f'struct{i+1}_' + component.prefix
-        model = model + submodel
+            component.prefix = f'struct{i}_' + component.prefix
+        return submodel
+
+    model = reduce(operator.add, (create_submodel(i, pg)
+                                  for i, pg in enumerate(property_groups)))
     # For each property, create single parameter without struct prefix
-    for prop in property_groups[0].values():
-        for param in (p for p in model.param_names if prop.name in p):
-            pbase = param.partition('_')[-1]
-            if 'struct0_' in param:
-                model.set_param_hint(pbase, expr='struct0_'+pbase)
-                continue
-            # make all parameters with struct prefix the same value
-            model.set_param_hint(param, expr='struct0_'+pbase)
-    # For each structure, bound probabilites and force sum to 1
-    prob_names = [p for p in model.param_names if 'prob_c' in p]
+    for param in (param for param in model.param_names
+                  for prop in property_groups[0].values()
+                  if prop.name in param and not param.startswith('struct0_')):
+        pbase = param.partition('_')[-1]  # param name without struct prefix
+        model.set_param_hint(pbase, expr='struct0_'+pbase)
+        model.set_param_hint(param, expr='struct0_'+pbase)
+    # Bound probabilites and force sum to 1
+    prob_names = [p for p in model.param_names if p.endswith('prob_c')]
     eq = '1-('+'+'.join(prob_names[1:])+')'
+    model.set_param_hint('struct0_prob_c', min=0, max=1, expr=eq)
     for p in prob_names:
         model.set_param_hint(p, min=0, max=1)
-        if 'struct0_' in p:
-            model.set_param_hint(p, min=0, max=1, expr=eq)
     return model
