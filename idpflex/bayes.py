@@ -317,9 +317,12 @@ def _create_model_from_property_group(property_group, models):
         The composite model created by applying the model to the corresponging
         property and concatenating the results.
     """  # noqa: E501
-    if not isinstance(models, list):
+    try:
+        models = list(models)
+    except TypeError:
         models = [models]
-    elif len(models) != 1 and len(models) != len(property_group):
+
+    if len(models) != 1 and len(models) != len(property_group):
         raise ValueError(f'Number of Properties {len(property_group)} '
                          f'and number of models {len(models)} do not match '
                          'and more than one model was provided.')
@@ -357,7 +360,9 @@ def create_model_from_property_groups(property_groups, models):
         The composite model created by applying the model to the corresponging
         property and concatenating the results.
     """
-    if not isinstance(property_groups, list):
+    try:
+        property_groups = list(property_groups)
+    except TypeError:
         property_groups = [property_groups]
 
     if len(property_groups) == 1:
