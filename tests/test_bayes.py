@@ -163,8 +163,8 @@ def test_multiproperty_fit_different_models(sans_fit):
     assert all([f'struct{i}_prob_c' in fits[-1].params for i in range(7)])
     assert fits[-1].params['sans_slope'].expr == 'struct0_sans_slope'
     assert fits[-1].params['struct1_sans_slope'].expr == 'struct0_sans_slope'
-    assert 1 - sum([p.value for p in fits[-1].params.values()
-                    if 'prob' in p.name]) < 1e-4
+    assert abs(1 - sum([p.value for p in fits[-1].params.values()
+                        if 'prob' in p.name])) < 1e-4
 
 
 def test_fit_bad_input(sans_fit):
