@@ -226,7 +226,8 @@ def create_at_depth_multiproperty(tree, depth, models=LinearModel,
         Model for the depth
     """
     property_names = experiment.keys() if experiment is not None else None
-    pgs = [node.property_group.subset(property_names)
+    pgs = [node.property_group.subset(property_names
+                                      or node.property_group.keys())
            for node in tree.nodes_at_depth(depth)]
     return create_model_from_property_groups(pgs, models)
 

@@ -6,6 +6,7 @@ import functools
 import numpy as np
 import scipy
 import numbers
+import copy
 from collections import OrderedDict
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -176,12 +177,12 @@ class PropertyDict(object):
         return np.concatenate([prop.feature_weights
                                for prop in self.values()])
 
-    def subset(self, names=None):
+    def subset(self, names):
         r"""
         Property dict for the specified sequence of names.
 
         The subset is a PropertyDict of the properties with the same order as
-        names. If names is None, return self.
+        names.
 
         Parameters
         ----------
@@ -193,8 +194,6 @@ class PropertyDict(object):
         -------
         PropertyDict
         """
-        if names is None:
-            return self
         if isinstance(names, str):
             return PropertyDict([self[names]])
         return PropertyDict([self[name] for name in names])
@@ -1279,7 +1278,7 @@ class ProfileProperty(object):
     @property
     def error_interpolator(self):
         r"""
-        Return an interpolator from the error data.
+        Return a linear interpolator from the error data.
 
         Returns
         -------
@@ -1289,17 +1288,18 @@ class ProfileProperty(object):
                                           fill_value='extrapolate')
 
     def interpolate(self, qvalues, inplace=False):
-        r"""Replace data with interpolated values at the specified qvalues."""
+        r"""Return linearly interpolated data in new object or in place."""
         if inplace:
             self.profile = self.interpolator(qvalues)
             self.errors = self.error_interpolator(qvalues)
             self.qvalues = qvalues.copy()
             return self
         # New instance of a property potentially using the subclass' init
-        return self.__class__(profile=self.interpolator(qvalues),
-                              errors=self.error_interpolator(qvalues),
-                              qvalues=qvalues.copy(), name=self.name,
-                              node=self.node)
+        result = copy.deepcopy(self)
+        result.profile = result.interpolator(qvalues)
+        result.errors = result.error_interpolator(qvalues)
+        result.qvalues = qvalues.copy()
+        return result
 
     def filter(self, mask=None, inplace=False):
         """Filter data with the provided mask, otherwise filter 'bad' data.
