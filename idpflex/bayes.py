@@ -195,7 +195,7 @@ def fit_to_depth(tree, experiment, property_name, max_depth=5):
 
 
 def create_at_depth_multiproperty(tree, depth, models=LinearModel,
-                                  experiment=None):
+                                  names=None, **subset_kws):
     r"""Create a model at a particular tree depth from the root node.
 
     Parameters
@@ -208,24 +208,25 @@ def create_at_depth_multiproperty(tree, depth, models=LinearModel,
         The models to apply to each property. If only one model, apply it to
         all properties. The model's function must have an independent
         parameter x and a keyword argument prop=None.
-    experiment : PropertyDict, optional
-        A PropertyDict containing the experimental data.
-        If provided, will use only the keys in the experiment.
+    names : list or str, optional
+        kwarg to pass on when creating subset of property dict
+    subset_kws : additional args for subset filtering, optional
+        kwargs to pass on when creating subset of property dict example
+        includes `property_type`
 
     Returns
     -------
     :class:`~lmfit.model.ModelResult`
         Model for the depth
     """
-    property_names = experiment.keys() if experiment is not None else None
-    pgs = [node.property_group.subset(property_names
-                                      or node.property_group.keys())
+    pgs = [node.property_group.subset(names or node.property_group.keys(),
+                                      **subset_kws)
            for node in tree.nodes_at_depth(depth)]
     return create_model_from_property_groups(pgs, models)
 
 
 def create_to_depth_multiproperty(tree, max_depth, models=LinearModel,
-                                  experiment=None):
+                                  names=None, **subset_kws):
     r"""Create models to a particular tree depth from the root node.
 
     Parameters
@@ -238,15 +239,19 @@ def create_to_depth_multiproperty(tree, max_depth, models=LinearModel,
         The models to apply to each property. If only one model, apply it to
         all properties. The model's function must have an independent
         parameter x and a keyword argument prop=None.
-    experiment : PropertyDict, optional
-        A PropertyDict containing the experimental data.
+    names : list or str, optional
+        kwarg to pass on when creating subset of property dict
+    subset_kws : additional args for subset filtering, optional
+        kwargs to pass on when creating subset of property dict example
+        includes `property_type`
 
     Returns
     -------
     list of :class:`~lmfit.model.ModelResult`
         Models for each depth
     """
-    return [create_at_depth_multiproperty(tree, i, models, experiment)
+    return [create_at_depth_multiproperty(tree, i, models, names=names,
+                                          **subset_kws)
             for i in range(max_depth + 1)]
 
 

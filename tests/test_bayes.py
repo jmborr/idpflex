@@ -130,13 +130,31 @@ def test_multiproperty_fit(sans_fit):
               for i in range(len(tree.leafs))]
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
-    models = bayes.create_to_depth_multiproperty(tree, max_depth=7)
+    ctd = bayes.create_to_depth_multiproperty
+    models = ctd(tree, max_depth=7)
     params_list = [m.make_params() for m in models]
     weights = 1/np.concatenate([exp.e, scalar.feature_weights])
     fits = bayes.fit_multiproperty_models(models, exp_pd, weights=weights,
                                           params_list=params_list)
-    chi2 = np.array([fit.chisqr for fit in fits])
+    chi2 = [fit.chisqr for fit in fits]
     assert chi2[sans_fit['depth']] <= 1e-10
+    # Test filtering by name
+    cad = bayes.create_at_depth_multiproperty
+    exp_pd2 = properties.PropertyDict([exp])
+    models2 = cad(tree, depth=sans_fit['depth'], names=exp_pd2.keys())
+    params_list2 = models2.make_params()
+    assert all(f'{k}_slope' in params_list2 for k in exp_pd2.keys())
+    # Test filtering by property type
+    models3 = cad(tree, depth=sans_fit['depth'],
+                  property_type=properties.ProfileProperty)
+    params_list3 = models3.make_params()
+    assert all(f'{p.name}_slope' in params_list3 for p in exp_pd2.values()
+               if isinstance(p, properties.ProfileProperty))
+    # Test filtering by filtering function
+    models4 = cad(tree, depth=sans_fit['depth'],
+                  to_keep_filter=lambda p: p.name == 'foo')
+    params_list4 = models4.make_params()
+    assert 'foo_slope' in params_list4
 
 
 def test_multiproperty_fit_different_models(sans_fit):
