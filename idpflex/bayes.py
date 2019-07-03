@@ -1,11 +1,12 @@
 # from qef.models import TabulatedFunctionModel
+import warnings
+import operator
+import copy
+import numpy as np
 from lmfit.models import (Model, ConstantModel)
 from lmfit import CompositeModel
-import numpy as np
-import copy
 from itertools import cycle
 from functools import reduce
-import operator
 
 
 class TabulatedFunctionModel(Model):
@@ -275,9 +276,19 @@ def fit_multiproperty_model(model, experiment, params=None, weights=None,
     """
     if params is None:
         params = model.make_params()
-    return model.fit(experiment.feature_vector, weights=weights,
-                     x=experiment.feature_domain, params=params,
-                     method=method)
+    result = model.fit(experiment.feature_vector, weights=weights,
+                       x=experiment.feature_domain, params=params,
+                       method=method)
+    # If there are structure probabilites, ensure they sum close to 1
+    if any(pname.endswith('prob_c') for pname in result.params):
+        ptotal = sum(p.value for p in result.params.values()
+                     if p.name.endswith('prob_c'))
+        if abs(1 - ptotal) > .05:
+            warnings.warn('Fit produced probabilites that did not sum to 1.'
+                          f' The probabilies summed to {ptotal}.'
+                          ' Recommended action is to refit with different'
+                          ' starting parameter values.')
+    return result
 
 
 def fit_multiproperty_models(models, experiment, params_list=None,

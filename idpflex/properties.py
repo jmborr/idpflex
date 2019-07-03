@@ -1,4 +1,5 @@
 import os
+import warnings
 import subprocess
 import tempfile
 import fnmatch
@@ -1290,6 +1291,10 @@ class ProfileProperty(object):
 
         Arguments for scipy.interpolate.interp1d can be passed in to control
         the interpolator behavior.
+
+        Note: If the interpolator is created and then the properties qvalues
+        or profile values are changed, the interpolator will still be for the
+        old data. Should probably recreate the interpolator.
         """
         self._interpolator = scipy.interpolate.interp1d(
             self.qvalues, self.profile, **kws)
@@ -1307,6 +1312,8 @@ class ProfileProperty(object):
         function
         """
         if self._interpolator is None:
+            warnings.warn('Property did not have interpolator.'
+                          ' Creating default interpolator.')
             self.create_interpolator(fill_value='extrapolate')
         return self._interpolator
 
@@ -1315,6 +1322,10 @@ class ProfileProperty(object):
 
         Arguments for scipy.interpolate.interp1d can be passed in to control
         the interpolator behavior.
+
+        Note: If the interpolator is created and then the properties qvalues
+        or error values are changed, the interpolator will still be for the
+        old data. Should probably recreate the interpolator.
         """
         self._error_interpolator = scipy.interpolate.interp1d(
             self.qvalues, self.errors, **kws)
@@ -1332,6 +1343,8 @@ class ProfileProperty(object):
         function
         """
         if self._error_interpolator is None:
+            warnings.warn('Property did not have error interpolator.'
+                          ' Creating default error interpolator.')
             self.create_error_interpolator(fill_value='extrapolate')
         return self._error_interpolator
 
@@ -1342,6 +1355,11 @@ class ProfileProperty(object):
         result.profile = result.interpolator(qvalues)
         result.errors = result.error_interpolator(qvalues)
         result.qvalues = qvalues.copy()
+        # When modifying values, should likely reset the interpolator
+        if inplace:
+            warnings.warn('Reseting interpolators due to modifying data.')
+            self._interpolator = None
+            self._error_interpolator = None
         return result
 
     def filter(self, to_drop=None, inplace=False):
@@ -1370,6 +1388,11 @@ class ProfileProperty(object):
         result.profile = result.profile[~to_drop]
         result.errors = result.errors[~to_drop]
         result.qvalues = result.qvalues[~to_drop]
+        # When modifying values, should likely reset the interpolator
+        if inplace:
+            warnings.warn('Reseting interpolators due to modifying data.')
+            self._interpolator = None
+            self._error_interpolator = None
         return result
 
 
