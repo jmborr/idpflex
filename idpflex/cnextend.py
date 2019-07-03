@@ -17,7 +17,7 @@ class ClusterNodeX(hierarchy.ClusterNode):
     def __init__(self, *args, **kwargs):
         # Using of *super* is unfeasible because *ClusterNode* does not
         # inherit from *object*.
-        # super(ClusterNodeX, self).__init__(*args, **kwargs)
+        # super().__init__(*args, **kwargs)
         hierarchy.ClusterNode.__init__(self, *args, **kwargs)
         self.parent = None  # parent node
         self._tree = None

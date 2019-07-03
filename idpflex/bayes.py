@@ -1,7 +1,6 @@
 # from qef.models import TabulatedFunctionModel
 from lmfit.models import (Model, ConstantModel)
 from lmfit import CompositeModel
-from scipy.interpolate import interp1d
 import numpy as np
 import copy
 from itertools import cycle
@@ -12,7 +11,9 @@ import operator
 class TabulatedFunctionModel(Model):
     r"""A fit model that uses a table of (x, y) values to interpolate.
 
-    Uses :class:`~scipy.interpolate.interp1d`
+    Uses an individual property's `interpolator` for the interpolation.
+    Control of the interpolator can be set using the property's
+    `create_interpolator` method.
 
     Fitting parameters:
         - integrated intensity ``amplitude`` :math:`A`
@@ -22,23 +23,15 @@ class TabulatedFunctionModel(Model):
     ----------
     prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
         Property used to create interpolator and model
-    interpolator_kind : str
-        Interpolator that :class:`~scipy.interpolate.interp1d` should use
     """  # noqa: E501
 
-    def __init__(self, prop, interpolator_kind='linear',
-                 fill_value='extrapolate', prefix='', missing=None, name=None,
-                 **kwargs):
+    def __init__(self, prop, prefix='', missing=None, name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
-        self._interpolator = interp1d(prop.x, prop.y, kind=interpolator_kind,
-                                      fill_value=fill_value)
-        self.prop = prop
 
         def tabulate(x, amplitude, center, prop=None):
             return amplitude * prop.interpolator(x - center)
 
-        super(TabulatedFunctionModel, self).__init__(tabulate, prop=prop,
-                                                     **kwargs)
+        super().__init__(tabulate, prop=prop, **kwargs)
         self.set_param_hint('amplitude', min=0, value=1)
         self.set_param_hint('center', value=0)
 
@@ -62,8 +55,7 @@ class ConstantVectorModel(Model):
                                  'with the domain of the profile being fitted.'
                                  ' Interpolate before creating the model.')
             return scale*prop.y
-        super(ConstantVectorModel, self).__init__(constant_vector, prop=prop,
-                                                  **kwargs)
+        super().__init__(constant_vector, prop=prop, **kwargs)
         self.set_param_hint('scale', value=1, min=0)
 
 
@@ -87,8 +79,7 @@ class LinearModel(Model):
                                  'with the domain of the profile being fitted.'
                                  ' Interpolate before creating the model.')
             return slope*prop.y + intercept
-        super(LinearModel, self).__init__(line, prop=prop,
-                                          **kwargs)
+        super().__init__(line, prop=prop, **kwargs)
         self.set_param_hint('slope', value=1, min=0)
         self.set_param_hint('intercept', value=0, min=0)
 

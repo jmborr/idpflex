@@ -26,11 +26,47 @@ class TestPropertyDict(object):
         propdict = propdict.subset(names=props.keys())
         assert len(propdict) == len(props)
         assert propdict.get('not_real', default=5) == 5
-        assert [k for k in propdict.keys()] == [k for k in props.keys()]
-        assert [v for v in propdict.values()] == [v for v in props.values()]
-        assert [i for i in propdict.items()] == [i for i in props.items()]
+        assert list(propdict.keys()) == list(props.keys())
+        assert list(propdict.values()) == list(props.values())
+        assert list(propdict.items()) == list(props.items())
         propdict2 = propdict.subset(names=list(props.keys())[0])
         assert len(propdict2) == 1
+
+    def test_subset(self):
+        props = {'profile': ps.ProfileProperty(name='profile',
+                                               profile=np.arange(10),
+                                               qvalues=np.arange(10)*5,
+                                               errors=np.arange(10)*.01),
+                 'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2),
+                 'scalar2': ps.ScalarProperty(name='scalar2', x=1, y=2, e=3),
+                 }
+        propdict = ps.PropertyDict(properties=props.values())
+        propdict = propdict.subset(names=props.keys())
+        assert len(propdict) == len(props)
+        propdict2 = propdict.subset(names=props.keys(),
+                                    property_type=(ps.ProfileProperty,
+                                                   ps.ScalarProperty))
+        assert len(propdict2) == len(props)
+        propdict3 = propdict.subset(names=props.keys(),
+                                    property_type=ps.ProfileProperty)
+        assert len(propdict3) == 1
+        assert 'profile' in propdict3
+        propdict4 = propdict.subset(names=props.keys(),
+                                    to_keep_filter=lambda prop:
+                                    all(prop.feature_vector == 2))
+        assert len(propdict4) == 1
+        assert 'scalar2' in propdict4
+        propdict5 = propdict.subset(names=props.keys(),
+                                    property_type=(ps.ScalarProperty),
+                                    to_keep_filter=lambda prop:
+                                    all(prop.feature_vector == 2))
+        assert len(propdict5) == 1
+        assert 'scalar2' in propdict5
+        propdict6 = propdict.subset(names=props.keys(),
+                                    property_type=ps.ProfileProperty,
+                                    to_keep_filter=lambda prop:
+                                    all(prop.feature_vector == 2))
+        assert len(propdict6) == 0
 
     def test_feature_vector_domain_weights(self):
         x = np.arange(10)
@@ -343,12 +379,13 @@ class TestProfileProperty(object):
         x1[3] = np.nan
         y1 = x1**2
         e1 = 0.1*y1
-        mask = np.isfinite(x1) & np.isfinite(y1) & np.isfinite(e1) & (e1 != 0)
+        to_drop = ~(np.isfinite(x1) & np.isfinite(y1) & np.isfinite(e1)
+                    & (e1 != 0))
         prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
                                   errors=e1)
-        y2 = y1[mask]
-        x2 = x1[mask]
-        e2 = e1[mask]
+        y2 = y1[~to_drop]
+        x2 = x1[~to_drop]
+        e2 = e1[~to_drop]
         new_prop = prop.filter(inplace=True)
         assert_array_equal(y2, new_prop.profile)
         assert_array_equal(e2, new_prop.errors)
@@ -357,11 +394,11 @@ class TestProfileProperty(object):
         sans_prop = ps.SansProperty(name='sans_foo', qvalues=x1, profile=y1,
                                     errors=e1, node='SomeNode')
         # inplace is False
-        mask2 = y1 < 0.5
-        y3 = y1[mask2]
-        x3 = x1[mask2]
-        e3 = e1[mask2]
-        new_sans_prop = sans_prop.filter(mask=mask2)
+        to_drop2 = ~(y1 < 0.5)
+        y3 = y1[~to_drop2]
+        x3 = x1[~to_drop2]
+        e3 = e1[~to_drop2]
+        new_sans_prop = sans_prop.filter(to_drop=to_drop2)
         assert isinstance(new_sans_prop, ps.SansProperty)
         assert sans_prop is not new_sans_prop
         assert new_sans_prop.node == 'SomeNode'
