@@ -363,11 +363,25 @@ class TestProfileProperty(object):
         assert_array_equal(e, new_prop.errors)
         assert_array_equal(x2, new_prop.qvalues)
         assert new_prop is prop
+        assert prop.interp_kws['fill_value'] == 'extrapolate'
+        assert prop.error_interp_kws['fill_value'] == 'extrapolate'
+        assert prop._interpolator is None
+        assert prop._error_interpolator is None
+        assert new_prop._interpolator is None
+        assert new_prop._error_interpolator is None
         sans_prop = ps.SansProperty(name='sans_foo', qvalues=x1, profile=y1,
                                     errors=0.1*y1, node='SomeNode')
+        # call interpolator before interpolate to make sure sans already has
+        # an interpolator object to check resetting
+        sans_prop.interpolator
+        sans_prop.error_interpolator
         new_sans_prop = sans_prop.interpolate(x2, inplace=False)
         assert isinstance(new_sans_prop, ps.SansProperty)
         assert sans_prop is not new_sans_prop
+        assert sans_prop._interpolator is not None
+        assert sans_prop._error_interpolator is not None
+        assert new_prop._interpolator is None
+        assert new_prop._error_interpolator is None
         assert new_sans_prop.node == 'SomeNode'
         assert_array_equal(y2, new_sans_prop.profile)
         assert_array_equal(e, new_sans_prop.errors)

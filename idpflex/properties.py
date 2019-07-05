@@ -1236,19 +1236,28 @@ class ProfileProperty(object):
         Errors in the intensity values
     node : :class:`~idpflex.cnextend.ClusterNodeX`
         Node to which this property belongs
+    interp_kws : dict
+        Keyword args to pass to scipy interp1d for interpolating profile data.
+        Defaults to using extrapolation.
+    error_interp_kws : dict
+        Keyword args to pass to scipy interp1d for interpolating error data.
+        Defaults to using extrapolation.
     """
 
     default_name = 'profile'
 
     def __init__(self, name=None, qvalues=None, profile=None, errors=None,
-                 node=None):
+                 node=None, interp_kws=None, error_interp_kws=None):
         self.name = name
         self.qvalues = qvalues
         self.profile = profile
         self.errors = errors
         self.node = node
         self._interpolator = None
+        self.interp_kws = interp_kws or {'fill_value': 'extrapolate'}
         self._error_interpolator = None
+        self.error_interp_kws = error_interp_kws or {'fill_value':
+                                                     'extrapolate'}
 
     @property
     def feature_vector(self):
@@ -1286,25 +1295,13 @@ class ProfileProperty(object):
         ws = self.profile / self.errors
         return ws / np.linalg.norm(ws)
 
-    def create_interpolator(self, **kws):
-        """Create the interpolator used by the property.
-
-        Arguments for scipy.interpolate.interp1d can be passed in to control
-        the interpolator behavior.
-
-        Note: If the interpolator is created and then the properties qvalues
-        or profile values are changed, the interpolator will still be for the
-        old data. Should probably recreate the interpolator.
-        """
-        self._interpolator = scipy.interpolate.interp1d(
-            self.qvalues, self.profile, **kws)
-
     @property
     def interpolator(self):
         r"""
         Return the property's interpolator for the profile data.
 
-        If not previously created, will default to a linear interpolator with
+        If not previously created, will create an interpolator using
+        `self.interp_kws`. These default to a linear interpolator with
         extrapolation.
 
         Returns
@@ -1313,39 +1310,29 @@ class ProfileProperty(object):
         """
         if self._interpolator is None:
             warnings.warn('Property did not have interpolator.'
-                          ' Creating default interpolator.')
-            self.create_interpolator(fill_value='extrapolate')
+                          ' Creating interpolator using interp_kws.')
+            self._interpolator = scipy.interpolate.interp1d(
+                self.qvalues, self.profile, **self.interp_kws)
         return self._interpolator
-
-    def create_error_interpolator(self, **kws):
-        """Create the error_interpolator used by the property.
-
-        Arguments for scipy.interpolate.interp1d can be passed in to control
-        the interpolator behavior.
-
-        Note: If the interpolator is created and then the properties qvalues
-        or error values are changed, the interpolator will still be for the
-        old data. Should probably recreate the interpolator.
-        """
-        self._error_interpolator = scipy.interpolate.interp1d(
-            self.qvalues, self.errors, **kws)
 
     @property
     def error_interpolator(self):
         r"""
         Return the property's interpolator for the error data.
 
-        If not previously created, will default to a linear interpolator with
-        extrapolation.
+        If not previously created, will create an interpolator using
+        `self.error_interp_kws`. These default to a linear interpolator
+        with extrapolation.
 
         Returns
         -------
         function
         """
         if self._error_interpolator is None:
-            warnings.warn('Property did not have error interpolator.'
-                          ' Creating default error interpolator.')
-            self.create_error_interpolator(fill_value='extrapolate')
+            warnings.warn('Property did not have error interpolator. Creating'
+                          ' interpolator using error_interp_kws.')
+            self._error_interpolator = scipy.interpolate.interp1d(
+                self.qvalues, self.errors, **self.error_interp_kws)
         return self._error_interpolator
 
     def interpolate(self, qvalues, inplace=False):
@@ -1356,10 +1343,10 @@ class ProfileProperty(object):
         result.errors = result.error_interpolator(qvalues)
         result.qvalues = qvalues.copy()
         # When modifying values, should likely reset the interpolator
-        if inplace:
-            warnings.warn('Reseting interpolators due to modifying data.')
-            self._interpolator = None
-            self._error_interpolator = None
+        # Will only reset self if inplace
+        warnings.warn('Reseting interpolators due to modifying data.')
+        result._interpolator = None
+        result._error_interpolator = None
         return result
 
     def filter(self, to_drop=None, inplace=False):
@@ -1389,10 +1376,10 @@ class ProfileProperty(object):
         result.errors = result.errors[~to_drop]
         result.qvalues = result.qvalues[~to_drop]
         # When modifying values, should likely reset the interpolator
-        if inplace:
-            warnings.warn('Reseting interpolators due to modifying data.')
-            self._interpolator = None
-            self._error_interpolator = None
+        # Will only reset self if inplace
+        warnings.warn('Reseting interpolators due to modifying data.')
+        result._interpolator = None
+        result._error_interpolator = None
         return result
 
 
