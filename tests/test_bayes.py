@@ -85,27 +85,26 @@ def test_global_minimization(sans_fit):
     mod = bayes.create_at_depth_multiproperty(tree, sans_fit['depth'])
     params = mod.make_params()
     for param in params.values():
-        param.set(min=0, max=10)
+        param.set(min=0, max=100)
     fit = bayes.fit_multiproperty_model(mod, exp_pd, params=params,
-                                        weights=exp_pd.feature_weights)
+                                        weights=1/exp.e)
     fit2 = bayes.fit_multiproperty_model(mod, exp_pd, params=params,
-                                         weights=exp_pd.feature_weights,
-                                         method='differential_evolution')
+                                         weights=1/exp.e,
+                                         method='basin_hopping')
     try:
-        # Expect less than 20% difference between these
-        diff = abs(1 - fit.redchi/fit2.redchi)
-        assert diff <= 0.20
+        # Expect global fit to be better than typical fit
+        assert fit.redchi <= fit.redchi
     except AssertionError:
-        warnings.warn('Global minimization did not get within 20% of reference'
-                      ' fit. Attempting a refit test failure.'
-                      f' Relative difference {diff:.3}.',
+        warnings.warn('Global minimization did not do better than reference'
+                      ' fit. Attempting a refit to avoid test failure.'
+                      f' Difference {fit.redchi - fit2.redchi:.3} where global'
+                      f' {fit2.redchi:.3} and reference {fit.redchi:.3}.',
                       RuntimeWarning)
         # Try refitting and looser tolerance
         fit3 = bayes.fit_multiproperty_model(mod, exp_pd, params=params,
                                              weights=exp_pd.feature_weights,
                                              method='differential_evolution')
-        assert abs(1 - fit.redchi/fit2.redchi) <= 0.50\
-            or abs(1 - fit3.redchi/fit2.redchi) <= 0.50
+        assert fit3 <= fit
 
 
 def test_fit_to_depth_multi(sans_fit):
@@ -184,8 +183,8 @@ def test_multiproperty_fit_different_models(sans_fit):
     assert fits[-1].params['struct1_sans_slope'].expr == 'struct0_sans_slope'
     ptotal = sum([p.value for p in fits[-1].params.values()
                   if 'prob' in p.name])
-    assert abs(1 - ptotal) <= 0.5
-    if abs(1 - ptotal) > 0.05:
+    assert abs(1 - ptotal) <= 0.05
+    if abs(1 - ptotal) > 0.005:
         warnings.warn(f'Probabilities did not sum to 1. Ptotal={ptotal:.3}.',
                       RuntimeWarning)
 

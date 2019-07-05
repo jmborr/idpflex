@@ -1,4 +1,5 @@
 # from qef.models import TabulatedFunctionModel
+import types
 import warnings
 import operator
 import copy
@@ -306,7 +307,7 @@ def fit_multiproperty_models(models, experiment, params_list=None,
             for model, params in zip(models, params_list)]
 
 
-def _create_model_from_property_group(property_group, models):
+def create_model_from_property_group(property_group, models):
     """Create a composite model from a PropertyDict and a set of models.
 
     Parameters
@@ -374,10 +375,10 @@ def create_model_from_property_groups(property_groups, models):
         property_groups = [property_groups]
 
     if len(property_groups) == 1:
-        return _create_model_from_property_group(property_groups[0], models)
+        return create_model_from_property_group(property_groups[0], models)
 
     def create_submodel(i, property_group):
-        submodel = _create_model_from_property_group(property_group, models)
+        submodel = create_model_from_property_group(property_group, models)
         submodel = ConstantModel(prefix='prob_')*submodel
         for component in submodel.components:
             component.prefix = f'struct{i}_' + component.prefix
@@ -395,7 +396,15 @@ def create_model_from_property_groups(property_groups, models):
     # Bound probabilites and force sum to 1
     prob_names = [p for p in model.param_names if p.endswith('prob_c')]
     eq = '1-('+'+'.join(prob_names[1:])+')'
-    model.set_param_hint('struct0_prob_c', min=0, max=1, expr=eq)
     for p in prob_names:
         model.set_param_hint(p, min=0, max=1)
+    model.set_param_hint('struct0_prob_c', expr=eq)
+    # model.set_param_hint('struct0_prob_c', min=0, max=1, expr=eq)
+    previous_residual = model._residual
+
+    def new_residual_func(self, params, data, weights, **kwargs):
+        return (np.exp(abs(1-sum(p for p in params.values()
+                                 if p.name.endswith('prob_c'))))
+                * previous_residual(params, data, weights, **kwargs))
+    model._residual = types.MethodType(new_residual_func, model)
     return model
