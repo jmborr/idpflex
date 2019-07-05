@@ -16,6 +16,8 @@ from idpflex import properties as idprop
 this_module_path = sys.modules[__name__].__file__
 data_dir = os.path.join(os.path.dirname(this_module_path), 'data')
 
+random_state = np.random.RandomState(23)
+
 
 @idprop.decorate_as_node_property((('name',       'name of the property'),
                                    ('domain_bar', 'property domain'),
@@ -56,7 +58,7 @@ def benchmark():
     n_leafs = 22379
     # Instantiate scalar properties for the leaf nodes, then propagate
     # up the tree
-    sc = np.random.normal(loc=100.0, size=n_leafs)
+    sc = random_state.normal(loc=100.0, size=n_leafs)
     sc_p = [idprop.ScalarProperty(name='sc', y=s) for s in sc]
     idprop.propagator_size_weighted_sum(sc_p, t)
     return {'z': z,
@@ -139,7 +141,7 @@ def sans_benchmark(request):
 
     # Create a node tree.
     # m is a 1D compressed matrix of distances between leafs
-    m = np.random.random(int(n_leafs * (n_leafs - 1) / 2))
+    m = random_state.random_sample(int(n_leafs * (n_leafs - 1) / 2))
     z = linkage(m)
     tree = cnextend.Tree(z)
 
