@@ -37,6 +37,17 @@ def test_fit_at_depth(sans_fit):
     fit2 = bayes.fit_model(mod, exp_pd, weights=1/exp.e)
     assert fit2.chisqr < 1e-10
     assert_array_equal(fit2.weights, 1/exp.e)
+    # make assertions about parameters
+    assert all([f'struct{i}_proportion_c' in fit.params
+                for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))])
+    assert all([f'struct{i}_{pname}_slope' in fit.params
+                for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))
+                for pname in exp_pd])
+    assert all([f'struct{i}_{pname}_intercept' in fit.params
+                for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))
+                for pname in exp_pd])
+    assert abs(sum(p for p in fit.params.values()
+                   if p.name.endswith('_p')) - 1) <= 1e-3
 
 
 def test_global_minimization(sans_fit):
@@ -66,7 +77,7 @@ def test_global_minimization(sans_fit):
         assert fit3 <= fit
 
 
-def test_fit_to_depth_multi(sans_fit):
+def test_fit_to_depth(sans_fit):
     tree = sans_fit['tree']
     exp = sans_fit['experiment_property']
     exp_pd = properties.PropertyDict([exp])

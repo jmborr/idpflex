@@ -242,12 +242,12 @@ def create_models(property_groups, use_tabulated=False):
     # for each structure calculate a probability using propotions
     proportion_names = [p for p in model.param_names
                         if p.endswith('proportion_c')]
-    total_eq = '+'.join(proportion_names)
+    total_eq = '(' + '+'.join(proportion_names) + ')'
+    model.set_param_hint('total', expr=total_eq)
     for p in proportion_names:
         struct = p.partition('_')[0]  # param name struct prefix
         model.set_param_hint(p, min=0, value=1)  # start with equal proportions
-        model.set_param_hint(f'{struct}_p', expr=f'{p}/{total_eq}')
-    model.set_param_hint('total', expr=total_eq)
+        model.set_param_hint(f'{struct}_p', expr=f'{p}/total')
 
     # For each property, create single parameter without struct prefix that
     # is appropriately scaled and equate the internal parameters
