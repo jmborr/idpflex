@@ -148,9 +148,9 @@ def fit_model(model, experiment, params=None, weights=None, method='leastsq'):
                        x=experiment.feature_domain, params=params,
                        method=method)
     # If there are structure probabilites, ensure they sum close to 1
-    if any(pname.endswith('prob_c') for pname in result.params):
+    if any(pname.endswith('_p') for pname in result.params):
         ptotal = sum(p.value for p in result.params.values()
-                     if p.name.endswith('prob_c'))
+                     if p.name.endswith('_p'))
         if abs(1 - ptotal) > .05:
             warnings.warn('Fit produced probabilites that did not sum to 1.'
                           f' The probabilies summed to {ptotal}.'
