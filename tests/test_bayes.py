@@ -57,10 +57,12 @@ def test_global_minimization(sans_fit):
     mod = bayes.create_at_depth(tree, sans_fit['depth'])
     params = mod.make_params()
     for param in params.values():
-        param.set(min=0, max=100)
+        param.set(min=0, max=1e9)
     fit = bayes.fit_model(mod, exp_pd, params=params, weights=1/exp.e)
     fit2 = bayes.fit_model(mod, exp_pd, params=params, weights=1/exp.e,
                            method='basin_hopping')
+    assert abs(sum(p for p in fit2.params.values()
+                   if p.name.endswith('_p')) - 1) <= 1e-3
     try:
         # Expect global fit to be better than typical fit
         assert fit.redchi <= fit.redchi
