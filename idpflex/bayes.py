@@ -147,15 +147,6 @@ def fit_model(model, experiment, params=None, weights=None, method='leastsq'):
     result = model.fit(experiment.feature_vector, weights=weights,
                        x=experiment.feature_domain, params=params,
                        method=method)
-    # If there are structure probabilites, ensure they sum close to 1
-    if any(pname.endswith('_p') for pname in result.params):
-        ptotal = sum(p.value for p in result.params.values()
-                     if p.name.endswith('_p'))
-        if abs(1 - ptotal) > .05:
-            warnings.warn('Fit produced probabilites that did not sum to 1.'
-                          f' The probabilies summed to {ptotal}.'
-                          ' Recommended action is to refit with different'
-                          ' starting parameter values.')
     return result
 
 
@@ -208,6 +199,20 @@ def create_model(property_group, use_tabulated=False):
 def create_models(property_groups, use_tabulated=False):
     """Create a composite model from a list of PropertyDict and a set of models.
 
+    For each structure there will be a probability parameter of the form
+    struct{i}_p that indicates the relative amount of the structure used to
+    make the fit. There is an accompanying struct{i}_proportion_c which is
+    duplicates this information but is not limited to [0, 1].
+
+    For each property, there will be internally used parameters of the form
+    struct{i}_{propertyname}_{paramname}.
+    These are reported as {propertyname}_{paramname} (which may be rescaled).
+
+    NOTE:
+    To adjust parameter bounds, values, etc.  after model creation, be sure to
+    adjust the parameters prefixed with struct{i} and not just
+    {propertyname}_{paramname}.
+
     Parameters
     ----------
     property_groups: list of :class:`~idpflex.properties.PropertyDict`
@@ -239,23 +244,35 @@ def create_models(property_groups, use_tabulated=False):
 
     model = reduce(operator.add, (create_submodel(i, pg)
                                   for i, pg in enumerate(property_groups)))
-    # for each structure calculate a probability using propotions
+
+    if len(property_groups[0]) > 1:
+        warnings.warn('Not enough properties for model to distinguish between'
+                      ' slope and proportion of structure. Setting internal'
+                      ' slope to not vary during fitting.')
+        for pname in filter(lambda p: 'slope' in p or 'ampl' in p,
+                            model.param_names):
+            model.set_param_hint(pname, vary=False, value=1)
+
+    # for each structure calculate a probability using the propotions
     proportion_names = [p for p in model.param_names
                         if p.endswith('proportion_c')]
     total_eq = '(' + '+'.join(proportion_names) + ')'
-    model.set_param_hint('total', expr=total_eq)
+    # model.set_param_hint('total', expr=total_eq)
     for p in proportion_names:
-        struct = p.partition('_')[0]  # param name struct prefix
-        model.set_param_hint(p, min=0, value=1)  # start with equal proportions
-        model.set_param_hint(f'{struct}_p', expr=f'{p}/total')
+        model.set_param_hint(p, min=0, value=1)
+        struct_prefix = p.partition('_')[0]
+        model.set_param_hint(f'{struct_prefix}_p', expr=f'{p}/{total_eq}')
 
-    # For each property, create single parameter without struct prefix that
-    # is appropriately scaled and equate the internal parameters
-    for param in (param for param in model.param_names
-                  for prop in property_groups[0].values()
-                  if prop.name in param and not param.startswith('struct0_')):
+    # For each property, ensure structures share slope/constant values
+    for param in filter(
+        lambda param: (any(pname in param for pname in property_groups[0])
+                       and not param.startswith('struct0_')),
+            model.param_names):
         pbase = param.partition('_')[-1]  # param name without struct prefix
-        model.set_param_hint(pbase, expr=f'struct0_{pbase}/total')
         model.set_param_hint(param, expr=f'struct0_{pbase}')
+        if 'center' in pbase:
+            model.set_param_hint(pbase, expr=f'struct0_{pbase}')
+        else:
+            model.set_param_hint(pbase, expr=f'struct0_{pbase}/{total_eq}')
 
     return model
