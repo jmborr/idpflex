@@ -245,7 +245,7 @@ def create_models(property_groups, use_tabulated=False):
     model = reduce(operator.add, (create_submodel(i, pg)
                                   for i, pg in enumerate(property_groups)))
 
-    if len(property_groups[0]) > 1:
+    if len(property_groups[0]) == 1:
         warnings.warn('Not enough properties for model to distinguish between'
                       ' slope and proportion of structure. Setting internal'
                       ' slope to not vary during fitting.')
