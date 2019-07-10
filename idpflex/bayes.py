@@ -15,7 +15,7 @@ class TabulatedFunctionModel(Model):
     `create_interpolator` method.
 
     Fitting parameters:
-        - integrated intensity ``amplitude`` :math:`A`
+        - integrated intensity ``slope`` :math:`A`
         - position of the peak ``center`` :math:`E_0`
 
     Parameters
@@ -27,11 +27,11 @@ class TabulatedFunctionModel(Model):
     def __init__(self, prop, prefix='', missing=None, name=None, **kwargs):
         kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
 
-        def tabulate(x, amplitude, center, intercept, prop=None):
-            return amplitude * prop.interpolator(x - center) + intercept
+        def tabulate(x, slope, center, intercept, prop=None):
+            return slope * prop.interpolator(x - center) + intercept
 
         super().__init__(tabulate, prop=prop, **kwargs)
-        self.set_param_hint('amplitude', min=0, value=1)
+        self.set_param_hint('slope', min=0, value=1)
         self.set_param_hint('center', value=0)
         self.set_param_hint('intercept', value=0)
 
@@ -58,7 +58,7 @@ class LinearModel(Model):
             return slope*prop.y + intercept
         super().__init__(line, prop=prop, **kwargs)
         self.set_param_hint('slope', value=1, min=0)
-        self.set_param_hint('intercept', value=0, min=0)
+        self.set_param_hint('intercept', value=0)
 
 
 def create_at_depth(tree, depth, names=None, use_tabulated=False,
@@ -240,6 +240,10 @@ def create_models(property_groups, use_tabulated=False):
         submodel = ConstantModel(prefix='proportion_')*submodel
         for component in submodel.components:
             component.prefix = f'struct{i}_' + component.prefix
+        # manually changing prefix eliminates default param hints
+        for pname in property_groups[0]:
+            submodel.set_param_hint(f'struct{i}_{pname}_slope', value=1, min=0)
+            submodel.set_param_hint(f'struct{i}_{pname}_intercept', value=0)
         return submodel
 
     model = reduce(operator.add, (create_submodel(i, pg)
@@ -249,9 +253,9 @@ def create_models(property_groups, use_tabulated=False):
         warnings.warn('Not enough properties for model to distinguish between'
                       ' slope and proportion of structure. Setting internal'
                       ' slope to not vary during fitting.')
-        for pname in filter(lambda p: 'slope' in p or 'ampl' in p,
+        for pname in filter(lambda p: 'slope' in p,
                             model.param_names):
-            model.set_param_hint(pname, vary=False, value=1)
+            model.set_param_hint(pname, vary=False, value=1, min=0)
 
     # for each structure calculate a probability using the propotions
     proportion_names = [p for p in model.param_names

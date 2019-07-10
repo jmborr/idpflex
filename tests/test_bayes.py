@@ -40,7 +40,12 @@ def test_fit_at_depth(sans_fit):
     # make assertions about parameters
     assert all([f'struct{i}_proportion_c' in fit.params
                 for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))])
+    assert all([fit.params[f'struct{i}_proportion_c'].min == 0
+                for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))])
     assert all([f'struct{i}_{pname}_slope' in fit.params
+                for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))
+                for pname in exp_pd])
+    assert all([fit.params[f'struct{i}_{pname}_slope'].min == 0
                 for i, _ in enumerate(tree.nodes_at_depth(sans_fit['depth']))
                 for pname in exp_pd])
     assert all([f'struct{i}_{pname}_intercept' in fit.params
