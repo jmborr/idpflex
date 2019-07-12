@@ -88,7 +88,7 @@ def create_at_depth(tree, depth, names=None, use_tabulated=False,
     pgs = [node.property_group.subset(names or node.property_group.keys(),
                                       **subset_kws)
            for node in tree.nodes_at_depth(depth)]
-    return create_models(pgs, use_tabulated)
+    return create_models(pgs, use_tabulated=use_tabulated)
 
 
 def create_to_depth(tree, max_depth, names=None,
@@ -115,7 +115,8 @@ def create_to_depth(tree, max_depth, names=None,
     list of :class:`~lmfit.model.ModelResult`
         Models for each depth
     """
-    return [create_at_depth(tree, i, names=names, **subset_kws)
+    return [create_at_depth(tree, i, names=names, use_tabulated=use_tabulated,
+                            **subset_kws)
             for i in range(max_depth + 1)]
 
 
@@ -233,10 +234,10 @@ def create_models(property_groups, use_tabulated=False):
         property_groups = [property_groups]
 
     if len(property_groups) == 1:
-        return create_model(property_groups[0], use_tabulated)
+        return create_model(property_groups[0], use_tabulated=use_tabulated)
 
     def create_submodel(i, property_group):
-        submodel = create_model(property_group, use_tabulated)
+        submodel = create_model(property_group, use_tabulated=use_tabulated)
         submodel = ConstantModel(prefix='proportion_')*submodel
         for component in submodel.components:
             component.prefix = f'struct{i}_' + component.prefix
