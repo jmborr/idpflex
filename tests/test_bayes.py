@@ -7,7 +7,7 @@ from idpflex import bayes
 from idpflex import properties
 
 
-def test_TabulatedModel_interpolation(sans_fit):
+def test_TabulatedCompositeModel_interpolation(sans_fit):
     tree = sans_fit['tree']
     tree.root.property_group = tree.root.property_group.subset(
         tree.root.property_group.keys(),
@@ -16,14 +16,16 @@ def test_TabulatedModel_interpolation(sans_fit):
     prop = tree.root[sans_fit['property_name']]
     params = mod.make_params()
     # test interpolation
+    model = bayes.TabulatedFunctionModel(prop=prop)
     qvals = prop.qvalues[:-1] + np.diff(prop.qvalues)/2
-    assert_array_almost_equal(mod.eval(params, x=qvals),
+    assert_array_almost_equal(model.eval(model.make_params(), x=qvals),
                               prop.interpolator(qvals), decimal=1)
     # test centering
     params[f'{prop.name}_center'].set(vary=True, value=2)
-    fit = mod.fit(prop.y, x=(prop.qvalues+2), params=params)
-    assert_array_almost_equal(fit.best_fit, prop.y, decimal=1)
-    assert_array_almost_equal(fit.params[f'{prop.name}_center'], 2, decimal=3)
+    prop_shifted = prop.interpolate(prop.qvalues + 2)
+    fit = mod.fit(prop_shifted.y, x=prop.qvalues, params=params)
+    assert_array_almost_equal(fit.best_fit, prop_shifted.y, decimal=1)
+    assert abs(fit.params[f'{prop.name}_center'] - 2) <= 0.2
 
 
 def test_fit_at_depth(sans_fit):
@@ -144,6 +146,11 @@ def test_fit_bad_input(sans_fit):
     properties.propagator_size_weighted_sum(values, tree)
     exp_pd = properties.PropertyDict([exp, scalar])
     ctd = bayes.create_to_depth
+    with pytest.raises(ValueError):
+        models = ctd(tree, max_depth=7, use_tabulated=True)
+        exp_shift = exp.interpolate(exp.x + 2)
+        exp_pd_shifted = properties.PropertyDict([exp_shift, scalar])
+        bayes.fit_models(models, exp_pd_shifted)
     with pytest.raises(ValueError):
         models = ctd(tree, max_depth=7)
         bayes.fit_models(models, exp_pd)

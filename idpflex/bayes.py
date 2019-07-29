@@ -28,7 +28,40 @@ class TabulatedFunctionModel(Model):
         kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
 
         def tabulate(x, slope, center, intercept, prop=None):
-            return slope * prop.interpolator(x - center) + intercept
+            return slope*prop.interpolator(x - center) + intercept
+
+        super().__init__(tabulate, prop=prop, **kwargs)
+        self.set_param_hint('slope', min=0, value=1)
+        self.set_param_hint('center', value=0)
+        self.set_param_hint('intercept', value=0)
+
+
+class TabulatedCompositeModel(Model):
+    r"""A fit model that uses a table of (x, y) values to interpolate.
+
+    Uses an individual property's `interpolator` for the interpolation.
+    Control of the interpolator can be set using the property's
+    `create_interpolator` method.
+
+    Fitting parameters:
+        - integrated intensity ``slope`` :math:`A`
+        - position of the peak ``center`` :math:`E_0`
+
+    Parameters
+    ----------
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
+    """  # noqa: E501
+
+    def __init__(self, prop, prefix='', missing=None, name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
+
+        def tabulate(x, slope, center, intercept, prop=None):
+            if not set(x).issuperset(prop.feature_domain):
+                raise ValueError('The domain of the experiment does not align '
+                                 'with the domain of the profile being fitted.'
+                                 ' Interpolate before creating the model.')
+            return slope*prop.interpolator(prop.x - center) + intercept
 
         super().__init__(tabulate, prop=prop, **kwargs)
         self.set_param_hint('slope', min=0, value=1)
@@ -180,7 +213,7 @@ def create_model(property_group, use_tabulated=False):
     """  # noqa: E501
     # Create new model instances or copy model instances
     if use_tabulated:
-        model_objs = [TabulatedFunctionModel(prop=p)
+        model_objs = [TabulatedCompositeModel(prop=p)
                       for p in property_group.values()]
     else:
         model_objs = [LinearModel(prop=p) for p in property_group.values()]
