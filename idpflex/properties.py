@@ -1,10 +1,13 @@
 import os
+import warnings
 import subprocess
 import tempfile
 import fnmatch
 import functools
 import numpy as np
+import scipy
 import numbers
+import copy
 from collections import OrderedDict
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -17,7 +20,8 @@ from idpflex import utils as iutl
 
 
 class PropertyDict(object):
-    r"""
+    r"""A container of properties.
+
     A container of properties mimicking some of the behavior of
     a standard python dictionary, plus methods
     representing features of the properties when taken as a group.
@@ -34,6 +38,13 @@ class PropertyDict(object):
             self._properties.update({p.name: p for p in properties})
 
     def __iter__(self):
+        r"""
+        Mimic a dictionary.
+
+        Returns
+        -------
+        list of keys of `_properties`
+        """
         return iter(self._properties.keys())
 
     def __getitem__(self, name):
@@ -49,7 +60,7 @@ class PropertyDict(object):
         -------
         property object, or `None` if no property is found with *name*
         """
-        self._properties.get(name, None)
+        return self._properties.get(name, None)
 
     def __setitem__(self, name, value):
         r"""
@@ -63,9 +74,17 @@ class PropertyDict(object):
         """
         self._properties[name] = value
 
+    def __len__(self):
+        r"""Mimic a dict length.
+
+        Returns
+        -------
+        The number of properties in the dict.
+        """
+        return len(self._properties)
+
     def get(self, name, default=None):
-        r"""
-        Mimic get method of a dictionary
+        r"""Mimic get method of a dictionary.
 
         Parameters
         ----------
@@ -83,7 +102,7 @@ class PropertyDict(object):
 
     def keys(self):
         r"""
-        Mimic keys method of a dictionary
+        Mimic keys method of a dictionary.
 
         Returns
         -------
@@ -93,7 +112,7 @@ class PropertyDict(object):
 
     def items(self):
         r"""
-        Mimic items method of a dictionary
+        Mimic items method of a dictionary.
 
         Returns
         -------
@@ -103,7 +122,7 @@ class PropertyDict(object):
 
     def values(self):
         r"""
-        Mimic values method of a dictionary
+        Mimic values method of a dictionary.
 
         Returns
         -------
@@ -111,57 +130,95 @@ class PropertyDict(object):
         """
         return self._properties.values()
 
-    def feature_vector(self, names=None):
+    @property
+    def feature_vector(self):
         r"""
-        Feature vector for the specified sequence of names.
+        Feature vector for the property dict.
 
         The feature vector is a concatenation of the feature vectors for
         each of the properties and the concatenation follows the order of
-        names.
-
-        If names is None, return all features in the property dict in the
-        order of insertion.
-
-        Parameters
-        ----------
-        names: list
-            List of property names
+        insertion.
 
         Returns
         -------
         numpy.ndarray
         """
-        if names is None:
-            return np.concatenate([prop.feature_vector
-                                   for prop in self.values()])
-        return np.concatenate([self._properties[n].feature_vector
-                               for n in names])
+        return np.concatenate([prop.feature_vector
+                               for prop in self.values()])
 
-    def feature_weights(self, names=None):
+    @property
+    def feature_domain(self):
         r"""
-        Feature vector weights for the specified sequence of names.
+        Feature domain for the property dict.
+
+        The feature domain is a concatenation of the feature domains for
+        each of the properties and the concatenation follows the order of
+        insertion.
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return np.concatenate([prop.feature_domain
+                               for prop in self.values()])
+
+    @property
+    def feature_weights(self):
+        r"""
+        Feature vector weights for the property group.
 
         The feature vector weights is a concatenation of the feature vectors
         weights for each of the properties and the concatenation follows the
-        order of names.
-
-        If names is None, return all features in the property dict in the
         order of insertion.
-
-        Parameters
-        ----------
-        names: list
-            List of property names
 
         Returns
         -------
         numpy.ndarray
         """
-        if names is None:
-            return np.concatenate([prop.feature_weights
-                                   for prop in self.values()])
-        return np.concatenate([self._properties[n].feature_weights
-                               for n in names])
+        return np.concatenate([prop.feature_weights
+                               for prop in self.values()])
+
+    def subset(self, names, property_type=None, to_keep_filter=lambda p: True):
+        r"""
+        Property dict for the specified sequence of names.
+
+        The subset is a PropertyDict of the properties with the same order as
+        names. The properties must satisfy the provided conditions, that is
+        they must be one of the types in property_type tuple (or single type
+        instance) and when passed to `to_keep_filter` must return trueish.
+
+        Parameters
+        ----------
+        names: list or str
+            List of property names. If single string treat as if a list of
+            one item.
+        property_type: tuple or property type, optional
+            Tuple of property types to keep. Default of None allows any type.
+            Anded with to_keep_filter.
+        to_keep_filter: callable, optional
+            A callable that should take a property object and return True if
+            the property should be included in the subset. Default allows all
+            properties.
+            Anded with property_types.
+
+        Returns
+        -------
+        PropertyDict
+        """
+        # Change to list to apply the constaints of property type and filter
+        # even if only a single name
+        if isinstance(names, str):
+            names = [names]
+
+        # Define an inner function for the purpose of informative stack trace
+        # and to add handling of property types to the filter
+        def _to_keep_filter(prop):
+            if property_type is None:
+                return to_keep_filter(prop)
+            return to_keep_filter(prop) and isinstance(prop, property_type)
+
+        return PropertyDict([self[name] for name in names
+                             if _to_keep_filter(self[name])])
 
 
 def register_as_node_property(cls, nxye):
@@ -198,7 +255,7 @@ def register_as_node_property(cls, nxye):
         ('errors', 'intensity errors'))
     """
     def property_item(attr_name, docstring):
-        r"""Factory of the node property items *name*, *x*, *y*, and *e*
+        r"""Factory of the node property items *name*, *x*, *y*, and *e*.
 
         Parameters
         ----------
@@ -231,7 +288,7 @@ def register_as_node_property(cls, nxye):
 
 
 def decorate_as_node_property(nxye):
-    r"""Decorator that endows a class with the node property protocol
+    r"""Decorator that endows a class with the node property protocol.
 
     For details, see :func:`~idpflex.properties.register_as_node_property`
 
@@ -281,14 +338,21 @@ class ScalarProperty(object):
 
     @property
     def feature_vector(self):
+        """Return the y value as the feature vector of the property."""
         return np.array([self.y, ])
 
     @property
+    def feature_domain(self):
+        """Return the x value as the input domain of the property."""
+        return np.array([self.x])
+
+    @property
     def feature_weights(self):
+        """Return 1 as the weight of the property components."""
         return np.array([1])
 
     def histogram(self, bins=10, errors=False, **kwargs):
-        r"""Histogram of values for the leaf nodes
+        r"""Histogram of values for the leaf nodes.
 
         Parameters
         ----------
@@ -350,7 +414,7 @@ class AsphericityMixin(object):
     from the gyration radius tensor"""
 
     def from_universe(self, a_universe, selection=None, index=0):
-        r"""Calculate asphericity from an MDAnalysis universe instance
+        r"""Calculate asphericity from an MDAnalysis universe instance.
 
         :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
 
@@ -386,7 +450,7 @@ class AsphericityMixin(object):
         return self
 
     def from_pdb(self, filename, selection=None):
-        r"""Calculate asphericity from a PDB file
+        r"""Calculate asphericity from a PDB file.
 
         :math:`\frac{(L_1-L_2)^2+(L_1-L_3)^2+L_2-L_3)^2}{2(L_1+L_2+L_3)^2}`
 
@@ -438,7 +502,7 @@ class Asphericity(ScalarProperty, AsphericityMixin):
 
     @property
     def asphericity(self):
-        r"""Property to read and set the asphericity"""
+        r"""Property to read and set the asphericity."""
         return self.y
 
     @asphericity.setter
@@ -451,7 +515,7 @@ class SaSaMixin(object):
     solvent accessible surface area"""
 
     def from_mdtraj(self, a_traj, probe_radius=1.4, **kwargs):
-        r"""Calculate solvent accessible surface for frames in a trajectory
+        r"""Calculate solvent accessible surface for frames in a trajectory.
 
         SASA units are Angstroms squared
 
@@ -476,7 +540,7 @@ class SaSaMixin(object):
         return self
 
     def from_pdb(self, filename, selection=None, probe_radius=1.4, **kwargs):
-        r"""Calculate solvent accessible surface area (SASA) from a PDB file
+        r"""Calculate solvent accessible surface area (SASA) from a PDB file.
 
         If the PBD contains more than one structure, calculation is performed
         only for the first one.
@@ -561,7 +625,7 @@ class SaSa(ScalarProperty, SaSaMixin):
 
     @property
     def sasa(self):
-        r"""Property to read and write the SASA value"""
+        r"""Property to read and write the SASA value."""
         return self.y
 
     @sasa.setter
@@ -574,7 +638,7 @@ class EndToEndMixin(object):
     the end-to-end distance for a protein"""
 
     def from_universe(self, a_universe, selection='name CA', index=0):
-        r"""Calculate radius of gyration from an MDAnalysis Universe instance
+        r"""Calculate radius of gyration from an MDAnalysis Universe instance.
 
         Does not apply periodic boundary conditions
 
@@ -601,7 +665,7 @@ class EndToEndMixin(object):
         return self
 
     def from_pdb(self, filename, selection='name CA'):
-        r"""Calculate end-to-end distance from a PDB file
+        r"""Calculate end-to-end distance from a PDB file.
 
         Does not apply periodic boundary conditions
 
@@ -625,7 +689,7 @@ class EndToEndMixin(object):
 
 
 class EndToEnd(ScalarProperty, EndToEndMixin):
-    r"""Implementation of a node property to store the end-to-end distance
+    r"""Implementation of a node property to store the end-to-end distance.
 
     See :class:`~idpflex.properties.ScalarProperty` for initialization
     """
@@ -639,7 +703,7 @@ class EndToEnd(ScalarProperty, EndToEndMixin):
 
     @property
     def end_to_end(self):
-        r"""Property to read and set the end-to-end distance"""
+        r"""Property to read and set the end-to-end distance."""
         return self.y
 
     @end_to_end.setter
@@ -653,7 +717,7 @@ class RadiusOfGyrationMixin(object):
     """
 
     def from_universe(self, a_universe, selection=None, index=0):
-        r"""Calculate radius of gyration from an MDAnalysis Universe instance
+        r"""Calculate radius of gyration from an MDAnalysis Universe instance.
 
         Parameters
         ----------
@@ -678,7 +742,7 @@ class RadiusOfGyrationMixin(object):
         return self
 
     def from_pdb(self, filename, selection=None):
-        r"""Calculate Rg from a PDB file
+        r"""Calculate Rg from a PDB file.
 
         Parameters
         ----------
@@ -713,7 +777,7 @@ class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
 
     @property
     def rg(self):
-        r"""Property to read and write the radius of gyration value"""
+        r"""Property to read and write the radius of gyration value."""
         return self.y
 
     @rg.setter
@@ -726,8 +790,7 @@ class RadiusOfGyration(ScalarProperty, RadiusOfGyrationMixin):
                             ('cmap', '(:class:`~numpy:numpy.ndarray`) contact map between residues'),  # noqa: E501
                             ('errors', '(:class:`~numpy:numpy.ndarray`) undeterminacies in the contact map')))  # noqa: E501
 class ResidueContactMap(object):
-    r"""Contact map between residues of the conformation using different
-    definitions of contact.
+    r"""Contact map between residues of the conformation using different definitions of contact.
 
     Parameters
     ----------
@@ -757,7 +820,7 @@ class ResidueContactMap(object):
         self.cutoff = cutoff
 
     def from_universe(self, a_universe, cutoff, selection=None, index=0):
-        r"""Calculate residue contact map from an MDAnalysis Universe instance
+        r"""Calculate residue contact map from an MDAnalysis Universe instance.
 
         Parameters
         ----------
@@ -804,7 +867,7 @@ class ResidueContactMap(object):
         return self
 
     def from_pdb(self, filename, cutoff, selection=None):
-        r"""Calculate residue contact map from a PDB file
+        r"""Calculate residue contact map from a PDB file.
 
         Parameters
         ----------
@@ -826,11 +889,11 @@ class ResidueContactMap(object):
         return self.from_universe(mda.Universe(filename), cutoff, selection)
 
     def plot(self):
-        r"""Plot the residue contact map of the node"""
+        r"""Plot the residue contact map of the node."""
         resids = [str(i) for i in list(set(self.selection.resids))]
 
         def format_fn(tick_val, tick_pos):
-            r"""Translates matrix index to residue number"""
+            r"""Translate matrix index to residue number."""
             if int(tick_val) < len(resids):
                 return resids[int(tick_val)]
             else:
@@ -858,7 +921,7 @@ class ResidueContactMap(object):
                             ('profile', '(:class:`~numpy:numpy.ndarray`) secondary structure assignment'),  # noqa: E501
                             ('errors', '(:class:`~numpy:numpy.ndarray`) assignment undeterminacy')))  # noqa: E501
 class SecondaryStructureProperty(object):
-    r"""Node property for secondary structure determined by DSSP
+    r"""Node property for secondary structure determined by DSSP.
 
     Every residue is assigned a vector of length 8. Indexes corresponds to
     different secondary structure assignment:
@@ -894,6 +957,7 @@ class SecondaryStructureProperty(object):
         N x 8 matrix denoting undeterminacies for each type of assigned
         secondary residue in every residue
     """  # noqa: E501
+
     #: Description of single-letter codes for secondary structure
     elements = OrderedDict([('H', 'Alpha helix'),
                             ('B', 'Isolated beta-bridge'),
@@ -941,7 +1005,7 @@ class SecondaryStructureProperty(object):
         self.node = None
 
     def from_dssp_sequence(self, codes):
-        r"""Load secondary structure profile from a single string of DSSP codes
+        r"""Load secondary structure profile from a string of DSSP codes.
 
         Attributes *aa* and *errors* are not modified, only **profile**.
 
@@ -964,7 +1028,7 @@ class SecondaryStructureProperty(object):
         return self
 
     def from_dssp(self, file_name):
-        r"""Load secondary structure profile from a `dssp file <http://swift.cmbi.ru.nl/gv/dssp/>`_
+        r"""Load secondary structure profile from a `dssp file <http://swift.cmbi.ru.nl/gv/dssp/>`_.
 
         Parameters
         ----------
@@ -991,7 +1055,7 @@ class SecondaryStructureProperty(object):
         return self
 
     def from_dssp_pdb(self, file_name, command='mkdssp', silent=True):
-        r"""Calculate secondary structure with DSSP
+        r"""Calculate secondary structure with DSSP.
 
         Parameters
         ----------
@@ -1051,8 +1115,7 @@ class SecondaryStructureProperty(object):
         return self.profile.argmax(axis=1)
 
     def disparity(self, other):
-        r"""Secondary Structure disparity of other profile to self, akin to
-        :math:`\chi^2`
+        r"""Secondary Structure disparity of other profile to self, akin to :math:`\chi^2`.
 
         :math:`\frac{1}{N(n-1)} \sum_{i=1}^{N}\sum_{j=1}^{n} (\frac{p_{ij}-q_ {ij}}{e})^2`
 
@@ -1080,7 +1143,7 @@ class SecondaryStructureProperty(object):
         return np.sum(np.square(dp/e)) / (n * (self.n_codes - 1))
 
     def plot(self, kind='percents'):
-        r"""Plot the secondary structure of the node holding the property
+        r"""Plot the secondary structure of the node holding the property.
 
         Parameters
         ----------
@@ -1171,47 +1234,157 @@ class ProfileProperty(object):
         Intensity values
     errors : :class:`~numpy:numpy.ndarray`
         Errors in the intensity values
+    node : :class:`~idpflex.cnextend.ClusterNodeX`
+        Node to which this property belongs
+    interp_kws : dict
+        Keyword args to pass to scipy interp1d for interpolating profile data.
+        Defaults to using extrapolation.
+    error_interp_kws : dict
+        Keyword args to pass to scipy interp1d for interpolating error data.
+        Defaults to using extrapolation.
     """
 
     default_name = 'profile'
 
-    def __init__(self, name=None, qvalues=None, profile=None, errors=None):
+    def __init__(self, name=None, qvalues=None, profile=None, errors=None,
+                 node=None, interp_kws=None, error_interp_kws=None):
         self.name = name
         self.qvalues = qvalues
         self.profile = profile
         self.errors = errors
-        self.node = None
+        self.node = node
+        self._interpolator = None
+        self.interp_kws = interp_kws or {'fill_value': 'extrapolate'}
+        self._error_interpolator = None
+        self.error_interp_kws = error_interp_kws or {'fill_value':
+                                                     'extrapolate'}
 
     @property
     def feature_vector(self):
         r"""
-        Each `qvalue` is interpreted as an independent feature,
-        and the related value in `profile` is a particular
-        "measured" value of that feature.
+        Each `qvalue` is interpreted as an independent feature, and the related value in `profile` is a particular "measured" value of that feature.
 
         Returns
         -------
         numpy.ndarray
-        """
+        """  # noqa: E501
         return self.profile
+
+    @property
+    def feature_domain(self):
+        r"""
+        Return `qvalue` corresponding to each of the values in the feature vector.
+
+        Returns
+        -------
+        numpy.ndarray
+        """  # noqa: E501
+        return self.qvalues
 
     @property
     def feature_weights(self):
         r"""
-        Weights to be used when calculating the square of the euclidean
-        distance between two feature vectors
+        Weights to be used when calculating the square of the euclidean distance between two feature vectors.
 
         Returns
         -------
         numpy.ndarray
+        """  # noqa: E501
+        if self.e is None or np.allclose(np.zeros(len(self.y)), self.e):
+            return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
+        ws = self.profile / self.errors
+        return ws / np.linalg.norm(ws)
+
+    @property
+    def interpolator(self):
+        r"""
+        Return the property's interpolator for the profile data.
+
+        If not previously created, will create an interpolator using
+        `self.interp_kws`. These default to a linear interpolator with
+        extrapolation.
+
+        Returns
+        -------
+        function
         """
-        return np.ones(len(self.profile)) / np.sqrt(len(self.profile))
+        if self._interpolator is None:
+            warnings.warn('Property did not have interpolator.'
+                          ' Creating interpolator using interp_kws.')
+            self._interpolator = scipy.interpolate.interp1d(
+                self.qvalues, self.profile, **self.interp_kws)
+        return self._interpolator
+
+    @property
+    def error_interpolator(self):
+        r"""
+        Return the property's interpolator for the error data.
+
+        If not previously created, will create an interpolator using
+        `self.error_interp_kws`. These default to a linear interpolator
+        with extrapolation.
+
+        Returns
+        -------
+        function
+        """
+        if self._error_interpolator is None:
+            warnings.warn('Property did not have error interpolator. Creating'
+                          ' interpolator using error_interp_kws.')
+            self._error_interpolator = scipy.interpolate.interp1d(
+                self.qvalues, self.errors, **self.error_interp_kws)
+        return self._error_interpolator
+
+    def interpolate(self, qvalues, inplace=False):
+        r"""Return interpolated data in new object or in place."""
+        # New instance of a property potentially using the subclass' init
+        result = self if inplace else copy.deepcopy(self)
+        result.profile = result.interpolator(qvalues)
+        result.errors = result.error_interpolator(qvalues)
+        result.qvalues = qvalues.copy()
+        # When modifying values, should likely reset the interpolator
+        # Will only reset self if inplace
+        warnings.warn('Reseting interpolators due to modifying data.')
+        result._interpolator = None
+        result._error_interpolator = None
+        return result
+
+    def filter(self, to_drop=None, inplace=False):
+        """Filter data using the `to_drop`, otherwise filter out 'bad' data.
+
+        Will remove the portion of the profile, qvalues, and errors that align
+        with true values in the `to_drop`. By default, the `to_drop` is true
+        when any of profile, qvalues, and errors are infinite or the errors
+        are zero.
+
+        Parameters
+        ----------
+        to_drop: numpy.ndarray of type bool
+            The to_drop to apply to the components of the profile.
+        inplace: bool
+            If inplace, modify profile data instead of creating new object.
+
+        Returns
+        -------
+        A new property with the chosen subset of data.
+        """
+        if to_drop is None:
+            to_drop = ~(np.isfinite(self.profile) & np.isfinite(self.qvalues)
+                        & np.isfinite(self.errors) & (self.errors != 0))
+        result = self if inplace else copy.deepcopy(self)
+        result.profile = result.profile[~to_drop]
+        result.errors = result.errors[~to_drop]
+        result.qvalues = result.qvalues[~to_drop]
+        # When modifying values, should likely reset the interpolator
+        # Will only reset self if inplace
+        warnings.warn('Reseting interpolators due to modifying data.')
+        result._interpolator = None
+        result._error_interpolator = None
+        return result
 
 
 class SansLoaderMixin(object):
-    r"""Mixin class providing a set of methods to load SANS data into a
-    profile property
-    """
+    r"""Mixin class providing a set of methods to load SANS data into a profile property."""  # noqa: E501
 
     def from_sassena(self, handle, profile_key='fqt', index=0):
         """Load SANS profile from sassena output.
@@ -1244,7 +1417,7 @@ class SansLoaderMixin(object):
         return self
 
     def from_cryson_int(self, file_name):
-        r"""Load profile from a `cryson \*.int <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file
+        r"""Load profile from a `cryson \*.int <https://www.embl-hamburg.de/biosans/manuals/cryson.html#output>`_ file.
 
         Parameters
         ----------
@@ -1282,7 +1455,7 @@ class SansLoaderMixin(object):
     def from_cryson_pdb(self, file_name, command='cryson',
                         args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
                         silent=True):
-        r"""Calculate profile with cryson from a PDB file
+        r"""Calculate profile with cryson from a PDB file.
 
         Parameters
         ----------
@@ -1365,8 +1538,7 @@ class SansLoaderMixin(object):
 
 
 class SansProperty(ProfileProperty, SansLoaderMixin):
-    r"""Implementation of a node property for SANS data
-    """
+    r"""Implementation of a node property for SANS data."""
 
     default_name = 'sans'
 
@@ -1377,12 +1549,10 @@ class SansProperty(ProfileProperty, SansLoaderMixin):
 
 
 class SaxsLoaderMixin(object):
-    r"""Mixin class providing a set of methods to load X-ray data into a
-    profile property
-    """
+    r"""Mixin class providing a set of methods to load X-ray data into a profile property."""  # noqa: E501
 
     def from_crysol_int(self, file_name):
-        r"""Load profile from a `crysol \*.int <https://www.embl-hamburg.de/biosaxs/manuals/crysol.html#output>`_ file
+        r"""Load profile from a `crysol \*.int <https://www.embl-hamburg.de/biosaxs/manuals/crysol.html#output>`_ file.
 
         Parameters
         ----------
@@ -1420,7 +1590,7 @@ class SaxsLoaderMixin(object):
     def from_crysol_pdb(self, file_name, command='crysol',
                         args='-lm 20 -sm 0.6 -ns 500 -un 1 -eh -dro 0.075',
                         silent=True):
-        r"""Calculate profile with crysol from a PDB file
+        r"""Calculate profile with crysol from a PDB file.
 
         Parameters
         ----------
@@ -1503,8 +1673,7 @@ class SaxsLoaderMixin(object):
 
 
 class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
-    r"""Implementation of a node property for SAXS data
-    """
+    r"""Implementation of a node property for SAXS data."""
 
     default_name = 'saxs'
 
@@ -1516,8 +1685,9 @@ class SaxsProperty(ProfileProperty, SaxsLoaderMixin):
 
 def propagator_weighted_sum(values, tree,
                             weights=lambda left_node, right_node: (1.0, 1.0)):
-    r"""Calculate the property of a node as the sum of its two siblings'
-    property values. Propagation applies only to non-leaf nodes.
+    r"""Calculate the property of a node as the sum of its two siblings' property values.
+
+    Propagation applies only to non-leaf nodes.
 
     Parameters
     ----------
@@ -1529,7 +1699,7 @@ def propagator_weighted_sum(values, tree,
         Callable of two arguments (left-node and right-node) returning
         a tuple of left and right weights. Default callable returns (1.0, 1.0)
         always.
-    """
+    """  # noqa: E501
     # Insert a property for each leaf
     if len(values) != tree.nleafs:
         msg = "len(values)={} but there are {} leafs".format(len(values),
@@ -1556,7 +1726,7 @@ def propagator_weighted_sum(values, tree,
 
 
 def weights_by_size(left_node, right_node):
-    r"""Calculate the relative size of two nodes
+    r"""Calculate the relative size of two nodes.
 
     Parameters
     ----------

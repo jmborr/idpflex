@@ -3,13 +3,91 @@ import numpy as np
 import pytest
 import tempfile
 import shutil
+import scipy
 
 from idpflex import properties as ps
 from idpflex.properties import SecondaryStructureProperty as SSP
+from numpy.testing import assert_array_equal, assert_almost_equal
+
+
+class TestPropertyDict(object):
+    def test_mimic_dict(self):
+        props = {'profile': ps.ProfileProperty(name='profile',
+                                               profile=np.arange(10),
+                                               qvalues=np.arange(10)*5,
+                                               errors=np.arange(10)*.01),
+                 'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2)}
+        scalar2 = ps.ScalarProperty(name='scalar2', x=1, y=2, e=3)
+        propdict = ps.PropertyDict(properties=props.values())
+        assert [k for k in propdict] == [k for k in props]
+        assert propdict['profile'] == props['profile']
+        propdict['scalar2'] = scalar2
+        assert propdict['scalar2'] == scalar2
+        propdict = propdict.subset(names=props.keys())
+        assert len(propdict) == len(props)
+        assert propdict.get('not_real', default=5) == 5
+        assert list(propdict.keys()) == list(props.keys())
+        assert list(propdict.values()) == list(props.values())
+        assert list(propdict.items()) == list(props.items())
+        propdict2 = propdict.subset(names=list(props.keys())[0])
+        assert len(propdict2) == 1
+
+    def test_subset(self):
+        props = {'profile': ps.ProfileProperty(name='profile',
+                                               profile=np.arange(10),
+                                               qvalues=np.arange(10)*5,
+                                               errors=np.arange(10)*.01),
+                 'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2),
+                 'scalar2': ps.ScalarProperty(name='scalar2', x=1, y=2, e=3),
+                 }
+        propdict = ps.PropertyDict(properties=props.values())
+        propdict = propdict.subset(names=props.keys())
+        assert len(propdict) == len(props)
+        propdict2 = propdict.subset(names=props.keys(),
+                                    property_type=(ps.ProfileProperty,
+                                                   ps.ScalarProperty))
+        assert len(propdict2) == len(props)
+        propdict3 = propdict.subset(names=props.keys(),
+                                    property_type=ps.ProfileProperty)
+        assert len(propdict3) == 1
+        assert 'profile' in propdict3
+        propdict4 = propdict.subset(names=props.keys(),
+                                    to_keep_filter=lambda prop:
+                                    all(prop.feature_vector == 2))
+        assert len(propdict4) == 1
+        assert 'scalar2' in propdict4
+        propdict5 = propdict.subset(names=props.keys(),
+                                    property_type=(ps.ScalarProperty),
+                                    to_keep_filter=lambda prop:
+                                    all(prop.feature_vector == 2))
+        assert len(propdict5) == 1
+        assert 'scalar2' in propdict5
+        propdict6 = propdict.subset(names=props.keys(),
+                                    property_type=ps.ProfileProperty,
+                                    to_keep_filter=lambda prop:
+                                    all(prop.feature_vector == 2))
+        assert len(propdict6) == 0
+
+    def test_feature_vector_domain_weights(self):
+        x = np.arange(10)
+        props = {'profile': ps.ProfileProperty(name='profile',
+                                               profile=x,
+                                               qvalues=x*5,
+                                               errors=x*.01 + 0.001),
+                 'scalar': ps.ScalarProperty(name='scalar', x=0, y=1, e=2)}
+        propdict = ps.PropertyDict(properties=props.values())
+        assert_array_equal(propdict.feature_vector,
+                           np.concatenate([p.feature_vector
+                                           for p in props.values()]))
+        assert_array_equal(propdict.feature_domain,
+                           np.concatenate([p.feature_domain
+                                           for p in props.values()]))
+        assert_array_equal(propdict.feature_weights,
+                           np.concatenate([p.feature_weights
+                                           for p in props.values()]))
 
 
 class TestRegisterDecorateProperties(object):
-
     def test_register_as_node_property(self):
         class SomeProperty(object):
             def __init__(self):
@@ -68,6 +146,15 @@ class TestScalarProperty(object):
         root_prop = benchmark['tree'].root['sc']
         ax = root_prop.plot(kind='histogram', errors=True, bins=1)
         assert ax.patches[0]._height == benchmark['nleafs']
+
+    def test_feature_vector_domain_and_weights(self):
+        prop = ps.ScalarProperty(name='foo', x=0, y=1, e=2)
+        assert prop.x == 0
+        assert prop.y == 1
+        assert prop.e == 2
+        assert_array_equal(prop.feature_vector, np.array([prop.y]))
+        assert_array_equal(prop.feature_domain, np.array([prop.x]))
+        assert_array_equal(prop.feature_weights, np.array([1]))
 
 
 class TestAsphericity(object):
@@ -243,6 +330,98 @@ class TestProfileProperty(object):
         assert np.array_equal(profile_prop.x, v)
         assert np.array_equal(profile_prop.y, 10*v)
         assert np.array_equal(profile_prop.e, 0.1*v)
+
+    def test_feature_vector_domain_and_weights(self):
+        v = np.arange(9)
+        profile_prop = ps.ProfileProperty(name='foo', qvalues=v, profile=10*v,
+                                          errors=0.1*v + 0.001)
+        assert_array_equal(profile_prop.feature_vector, profile_prop.profile)
+        assert_array_equal(profile_prop.feature_domain, profile_prop.qvalues)
+        ws = profile_prop.profile/profile_prop.errors
+        ws = ws/np.linalg.norm(ws)
+        assert_array_equal(profile_prop.feature_weights, ws)
+        assert_almost_equal(np.linalg.norm(profile_prop.feature_weights), 1)
+        # mimic reading from a crysol/cryson int
+        prof_prop2 = ps.ProfileProperty(name='foo', qvalues=v, profile=10*v,
+                                        errors=np.zeros(len(v)))
+        ws2 = np.ones(len(prof_prop2.profile))/len(prof_prop2.profile)**.5
+        assert_array_equal(prof_prop2.feature_weights, ws2)
+        assert_almost_equal(np.linalg.norm(prof_prop2.feature_weights), 1)
+
+    def test_interpolation(self):
+        x1 = np.random.rand(10)
+        # Gaurantee values outside of the range to test extrapolation
+        x2 = x1 + abs(np.random.rand(10))
+        y1 = x1**2
+        y2 = scipy.interpolate.interp1d(x1, y1, fill_value='extrapolate')(x2)
+        e = scipy.interpolate.interp1d(x1, .1*y1, fill_value='extrapolate')(x2)
+        prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
+                                  errors=0.1*y1)
+        assert_array_equal(y2, prop.interpolator(x2))
+        new_prop = prop.interpolate(x2, inplace=True)
+        assert_array_equal(y2, new_prop.profile)
+        assert_array_equal(e, new_prop.errors)
+        assert_array_equal(x2, new_prop.qvalues)
+        assert new_prop is prop
+        assert prop.interp_kws['fill_value'] == 'extrapolate'
+        assert prop.error_interp_kws['fill_value'] == 'extrapolate'
+        assert prop._interpolator is None
+        assert prop._error_interpolator is None
+        assert new_prop._interpolator is None
+        assert new_prop._error_interpolator is None
+        sans_prop = ps.SansProperty(name='sans_foo', qvalues=x1, profile=y1,
+                                    errors=0.1*y1, node='SomeNode')
+        # call interpolator before interpolate to make sure sans already has
+        # an interpolator object to check resetting
+        sans_prop.interpolator
+        sans_prop.error_interpolator
+        new_sans_prop = sans_prop.interpolate(x2, inplace=False)
+        assert isinstance(new_sans_prop, ps.SansProperty)
+        assert sans_prop is not new_sans_prop
+        assert sans_prop._interpolator is not None
+        assert sans_prop._error_interpolator is not None
+        assert new_prop._interpolator is None
+        assert new_prop._error_interpolator is None
+        assert new_sans_prop.node == 'SomeNode'
+        assert_array_equal(y2, new_sans_prop.profile)
+        assert_array_equal(e, new_sans_prop.errors)
+        assert_array_equal(x2, new_sans_prop.qvalues)
+
+    def test_filter(self):
+        x1 = np.random.rand(10)
+        # Gaurantee values outside of the range to test extrapolation
+        x1[3] = np.nan
+        y1 = x1**2
+        e1 = 0.1*y1
+        to_drop = ~(np.isfinite(x1) & np.isfinite(y1) & np.isfinite(e1)
+                    & (e1 != 0))
+        prop = ps.ProfileProperty(name='foo', qvalues=x1, profile=y1,
+                                  errors=e1)
+        y2 = y1[~to_drop]
+        x2 = x1[~to_drop]
+        e2 = e1[~to_drop]
+        new_prop = prop.filter(inplace=True)
+        assert_array_equal(y2, new_prop.profile)
+        assert_array_equal(e2, new_prop.errors)
+        assert_array_equal(x2, new_prop.qvalues)
+        assert new_prop is prop
+        sans_prop = ps.SansProperty(name='sans_foo', qvalues=x1, profile=y1,
+                                    errors=e1, node='SomeNode')
+        # inplace is False
+        to_drop2 = ~(y1 < 0.5)
+        y3 = y1[~to_drop2]
+        x3 = x1[~to_drop2]
+        e3 = e1[~to_drop2]
+        new_sans_prop = sans_prop.filter(to_drop=to_drop2)
+        assert isinstance(new_sans_prop, ps.SansProperty)
+        assert sans_prop is not new_sans_prop
+        assert new_sans_prop.node == 'SomeNode'
+        assert all(new_sans_prop.profile < .5)
+        assert len(new_sans_prop.profile == new_sans_prop.errors)
+        assert len(new_sans_prop.profile == new_sans_prop.qvalues)
+        assert_array_equal(y3, new_sans_prop.profile)
+        assert_array_equal(e3, new_sans_prop.errors)
+        assert_array_equal(x3, new_sans_prop.qvalues)
 
 
 class TestSansProperty(object):

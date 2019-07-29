@@ -1,171 +1,316 @@
 # from qef.models import TabulatedFunctionModel
-from lmfit.models import (Model, ConstantModel, index_of)
-from scipy.interpolate import interp1d
+import warnings
+import operator
+import numpy as np
+from lmfit.models import (Model, ConstantModel)
+from lmfit import CompositeModel
+from functools import reduce
 
 
 class TabulatedFunctionModel(Model):
-    r"""A fit model that uses a table of (x, y) values to interpolate
+    r"""A fit model that uses a table of (x, y) values to interpolate.
 
-    Uses :class:`~scipy.interpolate.interp1d`
+    Uses an individual property's `interpolator` for the interpolation.
+    Control of the interpolator can be set using the property's
+    `create_interpolator` method.
 
     Fitting parameters:
-        - integrated intensity ``amplitude`` :math:`A`
+        - integrated intensity ``slope`` :math:`A`
         - position of the peak ``center`` :math:`E_0`
-        - nominal relaxation time ``tau`` :math:`\tau`
-        - stretching exponent ``beta`` :math:`\beta`
 
     Parameters
     ----------
-    xdata : :class:`~numpy:numpy.ndarray`
-        X-values to construct the interpolator
-    ydata : :class:`~numpy:numpy.ndarray`
-        Y-values to construct the interpolator
-    interpolator_kind : str
-        Interpolator that :class:`~scipy.interpolate.interp1d` should use
-    """
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
+    """  # noqa: E501
 
-    def __init__(self, xdata, ydata, interpolator_kind='linear',
-                 prefix='', missing=None, name=None,
-                 **kwargs):
-        kwargs.update({'prefix': prefix, 'missing': missing})
-        self._interpolator = interp1d(xdata, ydata, kind=interpolator_kind)
+    def __init__(self, prop, prefix='', missing=None, name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
 
-        def tabulate(x, amplitude, center):
-            return amplitude * self._interpolator(x - center)
+        def tabulate(x, slope, center, intercept, prop=None):
+            return slope*prop.interpolator(x - center) + intercept
 
-        super(TabulatedFunctionModel, self).__init__(tabulate, **kwargs)
-        self.set_param_hint('amplitude', min=0, value=1)
+        super().__init__(tabulate, prop=prop, **kwargs)
+        self.set_param_hint('slope', min=0, value=1)
         self.set_param_hint('center', value=0)
-
-    def guess(self, y, x=None, **kwargs):
-        r"""Estimate fitting parameters from input data
-
-        Parameters
-        ----------
-        y : :class:`~numpy:numpy.ndarray`
-            Values to fit to, e.g., SANS or SAXS intensity values
-        x : :class:`~numpy:numpy.ndarray`
-            independent variable, e.g., momentum transfer
-
-        Returns
-        -------
-        :class:`~lmfit.parameter.Parameters`
-            Parameters with estimated initial values.
-        """
-        amplitude = 1.0
-        center = 0.0
-        if x is not None:
-            center = x[index_of(y, max(y))]  # assumed peak within domain x
-            amplitude = max(y)
-        return self.make_params(amplitude=amplitude, center=center)
+        self.set_param_hint('intercept', value=0)
 
 
-def model_at_node(node, property_name):
-    r"""Generate fit model as a tabulated function with a scaling parameter,
-    plus a flat background
+class TabulatedCompositeModel(Model):
+    r"""A fit model that uses a table of (x, y) values to interpolate.
+
+    Uses an individual property's `interpolator` for the interpolation.
+    Control of the interpolator can be set using the property's
+    `create_interpolator` method.
+
+    Fitting parameters:
+        - integrated intensity ``slope`` :math:`A`
+        - position of the peak ``center`` :math:`E_0`
 
     Parameters
     ----------
-    node : :class:`~idpflex.cnextend.ClusterNodeX`
-        One node of the hierarchical :class:`~idpflex.cnextend.Tree`
-    property_name : str
-        Name of the property to create the model for
-
-    Returns
-    -------
-    :class:`~lmfit.model.CompositeModel`
-        A model composed of a :class:`~idpflex.bayes.TabulatedFunctionModel`
-        and a :class:`~lmfit.models.ConstantModel`
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
     """  # noqa: E501
-    p = node[property_name]
-    mod = TabulatedFunctionModel(p.x, p.y) + ConstantModel()
-    mod.set_param_hint('center', vary=False)
-    return mod
+
+    def __init__(self, prop, prefix='', missing=None, name=None, **kwargs):
+        kwargs.update({'prefix': prefix, 'missing': missing, 'name': name})
+
+        def tabulate(x, slope, center, intercept, prop=None):
+            if not set(x).issuperset(prop.feature_domain):
+                raise ValueError('The domain of the experiment does not align '
+                                 'with the domain of the profile being fitted.'
+                                 ' Interpolate before creating the model.')
+            return slope*prop.interpolator(prop.x - center) + intercept
+
+        super().__init__(tabulate, prop=prop, **kwargs)
+        self.set_param_hint('slope', min=0, value=1)
+        self.set_param_hint('center', value=0)
+        self.set_param_hint('intercept', value=0)
 
 
-def model_at_depth(tree, depth, property_name):
-    r"""Generate a fit model at a particular tree depth
+class LinearModel(Model):
+    r"""A fit model that fits :math:`m*prop.y + b = exp`.
+
+    Fitting parameters:
+        - slope ``slope``
+        - intercept ``intercept``
+
+    Parameters
+    ----------
+    prop : :class:`~idpflex.properties.ScalarProperty` or :class:`~idpflex.properties.ProfileProperty`
+        Property used to create interpolator and model
+    """  # noqa: E501
+
+    def __init__(self, prop=None, **kwargs):
+        def line(x, slope, intercept, prop=None):
+            if not set(x).issuperset(prop.feature_domain):
+                raise ValueError('The domain of the experiment does not align '
+                                 'with the domain of the profile being fitted.'
+                                 ' Interpolate before creating the model.')
+            return slope*prop.y + intercept
+        super().__init__(line, prop=prop, **kwargs)
+        self.set_param_hint('slope', value=1, min=0)
+        self.set_param_hint('intercept', value=0)
+
+
+def create_at_depth(tree, depth, names=None, use_tabulated=False,
+                    **subset_kws):
+    r"""Create a model at a particular tree depth from the root node.
 
     Parameters
     ----------
     tree : :class:`~idpflex.cnextend.Tree`
         Hierarchical tree
-    depth: int
-        depth level, starting from the tree's root (depth=0)
-    property_name : str
-        Name of the property to create the model for
+    depth : int
+        Fit at this depth
+    names : list or str, optional
+        kwarg to pass on when creating subset of property dict
+    use_tabulated: bool
+        Decide to use an tabulated (interpolated) model or a linear model with
+        out interpolation. Useful to "center" data.
+    subset_kws : additional args for subset filtering, optional
+        kwargs to pass on when creating subset of property dict example
+        includes `property_type`
 
     Returns
     -------
-    :class:`~lmfit.model.CompositeModel`
-        A model composed of a :class:`~idpflex.bayes.TabulatedFunctionModel`
-        for each node plus a :class:`~lmfit.models.ConstantModel` accounting
-        for a flat background
-    """  # noqa: E501
-    mod = ConstantModel()
-    for node in tree.nodes_at_depth(depth):
-        p = node[property_name]
-        m = TabulatedFunctionModel(p.x, p.y, prefix='n{}_'.format(node.id))
-        m.set_param_hint('center', vary=False)
-        m.set_param_hint('amplitude', value=1.0 / (1 + depth))
-        mod += m
-    return mod
+    :class:`~lmfit.model.ModelResult`
+        Model for the depth
+    """
+    pgs = [node.property_group.subset(names or node.property_group.keys(),
+                                      **subset_kws)
+           for node in tree.nodes_at_depth(depth)]
+    return create_models(pgs, use_tabulated=use_tabulated)
 
 
-def fit_at_depth(tree, experiment, property_name, depth):
-    r"""Fit at a particular tree depth from the root node
-
-        Fit experiment against the property stored in the nodes. The fit model
-        is generated by :func:`~idpflex.bayes.model_at_depth`
-
-        Parameters
-        ----------
-        tree : :class:`~idpflex.cnextend.Tree`
-            Hierarchical tree
-        experiment : :class:`~idpflex.properties.ProfileProperty`
-            A property containing the experimental info.
-        property_name: str
-            The name of the simulated property to compare against experiment
-        max_depth : int
-            Fit at each depth up to (and including) max_depth
-
-        Returns
-        -------
-        :class:`~lmfit.model.ModelResult`
-            Results of the fit
-        """
-    mod = model_at_depth(tree, depth, property_name)
-    params = mod.make_params()
-    return mod.fit(experiment.y,
-                   x=experiment.x,
-                   weights=1.0 / experiment.e,
-                   params=params)
-
-
-def fit_to_depth(tree, experiment, property_name, max_depth=5):
-    r"""Fit at each tree depth from the root node up to a maximum depth
-
-    Fit experiment against the property stored in the nodes. The fit model
-    is generated by :func:`~idpflex.bayes.model_at_depth`
+def create_to_depth(tree, max_depth, names=None,
+                    use_tabulated=False, **subset_kws):
+    r"""Create models to a particular tree depth from the root node.
 
     Parameters
     ----------
     tree : :class:`~idpflex.cnextend.Tree`
         Hierarchical tree
-    experiment : :class:`~idpflex.properties.ProfileProperty`
-        A property containing the experimental info.
-    property_name: str
-        The name of the simulated property to compare against experiment
     max_depth : int
         Fit at each depth up to (and including) max_depth
+    names : list or str, optional
+        kwarg to pass on when creating subset of property dict
+    use_tabulated: bool
+        Decide to use an tabulated (interpolated) model or a linear model with
+        out interpolation. Useful to "center" data.
+    subset_kws : additional args for subset filtering, optional
+        kwargs to pass on when creating subset of property dict example
+        includes `property_type`
 
     Returns
     -------
-    :py:class:`list`
-        A list of :class:`~lmfit.model.ModelResult` items containing the
-        fit at each level of the tree up to and including `max_depth`
+    list of :class:`~lmfit.model.ModelResult`
+        Models for each depth
     """
+    return [create_at_depth(tree, i, names=names, use_tabulated=use_tabulated,
+                            **subset_kws)
+            for i in range(max_depth + 1)]
 
-    # Fit each level of the tree
-    return [fit_at_depth(tree, experiment, property_name, depth) for
-            depth in range(max_depth + 1)]
+
+def fit_model(model, experiment, params=None, weights=None, method='leastsq'):
+    """Apply a fit to a particular model.
+
+    Parameters
+    ----------
+    model: :class:`~lmfit.model.ModelResult`
+        Model to be fit
+    experiment: :class:`~idpflex.properties.PropertyDict`
+        Set of experimental properties to be fit.
+    params: Parameters
+        Parameters of the model to be used. Can default to model.make_params()
+    weights: numpy.ndarray, optional
+        Array of weights to be used for fitting
+    method: str, optional
+        Choice of which fitting method to use with lmfit. Defaults to 'leastsq'
+        but can choose methods such as 'differential_evolution' to find global
+        minimizations for the parameters.
+
+    Returns
+    -------
+    :class:`~lmfit.model.ModelResult`
+        The fit of the model
+    """
+    if params is None:
+        params = model.make_params()
+    result = model.fit(experiment.feature_vector, weights=weights,
+                       x=experiment.feature_domain, params=params,
+                       method=method)
+    return result
+
+
+def fit_models(models, experiment, params_list=None, weights=None,
+               method='leastsq'):
+    """Apply fitting to a list of models."""
+    if params_list is None:
+        params_list = [m.make_params() for m in models]
+    return [fit_model(model, experiment, params=params,
+                      weights=weights, method=method)
+            for model, params in zip(models, params_list)]
+
+
+def create_model(property_group, use_tabulated=False):
+    """Create a composite model from a PropertyDict and a set of models.
+
+    Parameters
+    ----------
+    property_group: :class:`~idpflex.properties.PropertyDict`
+        The set of properties used to create a composite model.
+    use_tabulated: bool
+        Decide to use an tabulated (interpolated) model or a linear model with
+        out interpolation. Useful to "center" data.
+
+    Returns
+    -------
+    :class:`~lmfit.CompositeModel`
+        The composite model created by applying the model to the corresponging
+        property and concatenating the results.
+    """  # noqa: E501
+    # Create new model instances or copy model instances
+    if use_tabulated:
+        model_objs = [TabulatedCompositeModel(prop=p)
+                      for p in property_group.values()]
+    else:
+        model_objs = [LinearModel(prop=p) for p in property_group.values()]
+    # Prefix all models with the associated property name
+    # Set the model's function prop arg to use the property
+    for i, p in enumerate(property_group.values()):
+        model_objs[i].opts['prop'] = p
+        model_objs[i].prefix = p.name + '_'
+    # Reduce models to a single composite model
+    return reduce(lambda joined_model, m:
+                  CompositeModel(joined_model, m, lambda l, r:
+                                 np.concatenate([np.atleast_1d(l),
+                                                 np.atleast_1d(r)])),
+                  model_objs)
+
+
+def create_models(property_groups, use_tabulated=False):
+    """Create a composite model from a list of PropertyDict and a set of models.
+
+    For each structure there will be a probability parameter of the form
+    struct{i}_p that indicates the relative amount of the structure used to
+    make the fit. There is an accompanying struct{i}_proportion_c which is
+    duplicates this information but is not limited to [0, 1].
+
+    For each property, there will be internally used parameters of the form
+    struct{i}_{propertyname}_{paramname}.
+    These are reported as {propertyname}_{paramname} (which may be rescaled).
+
+    NOTE:
+    To adjust parameter bounds, values, etc.  after model creation, be sure to
+    adjust the parameters prefixed with struct{i} and not just
+    {propertyname}_{paramname}.
+
+    Parameters
+    ----------
+    property_groups: list of :class:`~idpflex.properties.PropertyDict`
+        The set of properties used to create a composite model.
+    use_tabulated: bool
+        Decide to use an tabulated (interpolated) model or a linear model with
+        out interpolation. Useful to "center" data.
+
+    Returns
+    -------
+    :class:`~lmfit.CompositeModel`
+        The composite model created by applying the model to the corresponging
+        property and concatenating the results.
+    """
+    try:
+        property_groups = list(property_groups)
+    except TypeError:
+        property_groups = [property_groups]
+
+    if len(property_groups) == 1:
+        return create_model(property_groups[0], use_tabulated=use_tabulated)
+
+    def create_submodel(i, property_group):
+        submodel = create_model(property_group, use_tabulated=use_tabulated)
+        submodel = ConstantModel(prefix='proportion_')*submodel
+        for component in submodel.components:
+            component.prefix = f'struct{i}_' + component.prefix
+        # manually changing prefix eliminates default param hints
+        for pname in property_groups[0]:
+            submodel.set_param_hint(f'struct{i}_{pname}_slope', value=1, min=0)
+            submodel.set_param_hint(f'struct{i}_{pname}_intercept', value=0)
+        return submodel
+
+    model = reduce(operator.add, (create_submodel(i, pg)
+                                  for i, pg in enumerate(property_groups)))
+
+    if len(property_groups[0]) == 1:
+        warnings.warn('Not enough properties for model to distinguish between'
+                      ' slope and proportion of structure. Setting internal'
+                      ' slope to not vary during fitting.')
+        for pname in filter(lambda p: 'slope' in p,
+                            model.param_names):
+            model.set_param_hint(pname, vary=False, value=1, min=0)
+
+    # for each structure calculate a probability using the propotions
+    proportion_names = [p for p in model.param_names
+                        if p.endswith('proportion_c')]
+    total_eq = '(' + '+'.join(proportion_names) + ')'
+    # model.set_param_hint('total', expr=total_eq)
+    for p in proportion_names:
+        model.set_param_hint(p, min=0, value=1)
+        struct_prefix = p.partition('_')[0]
+        model.set_param_hint(f'{struct_prefix}_p', expr=f'{p}/{total_eq}')
+
+    # For each property, ensure structures share slope/constant values
+    for param in filter(
+        lambda param: (any(pname in param for pname in property_groups[0])
+                       and not param.startswith('struct0_')),
+            model.param_names):
+        pbase = param.partition('_')[-1]  # param name without struct prefix
+        model.set_param_hint(param, expr=f'struct0_{pbase}')
+        if 'center' in pbase:
+            model.set_param_hint(pbase, expr=f'struct0_{pbase}')
+        else:
+            model.set_param_hint(pbase, expr=f'struct0_{pbase}/{total_eq}')
+
+    return model
